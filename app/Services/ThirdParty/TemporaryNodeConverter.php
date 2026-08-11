@@ -55,6 +55,81 @@ class TemporaryNodeConverter
     }
 
     /**
+     * Richness score used to pick the most complete node when two temporary
+     * nodes collide on the same fingerprint: the variant carrying the most
+     * non-empty transport/TLS settings wins.
+     */
+    public function richness(TemporaryNode $node): int
+    {
+        return $this->settingsRichness($node->settings, ['credential', 'name', 'fp']);
+    }
+
+    /**
+     * Richness score for a converted server array; metadata keys are ignored
+     * so only connectivity-relevant fields count.
+     *
+     * @param array $server
+     * @return int
+     */
+    public function serverRichness(array $server): int
+    {
+        static $ignored = [
+            'id', 'sort', 'updated_at', 'last_check_at', 'show', 'group_id',
+            'source_type', 'source_id', 'is_third_party', 'cache_key',
+            'is_online', 'mport', 'type', 'host', 'port', 'name',
+        ];
+        $score = 0;
+        foreach ($server as $key => $value) {
+            if (in_array($key, $ignored, true)) {
+                continue;
+            }
+            if (is_array($value)) {
+                if ($value === []) {
+                    continue;
+                }
+                $score += $this->nestedRichness($value);
+            } elseif ($value !== '' && $value !== null && $value !== false && $value !== 0) {
+                $score++;
+            }
+        }
+        return $score;
+    }
+
+    private function settingsRichness(array $settings, array $excluded): int
+    {
+        $score = 0;
+        foreach ($settings as $key => $value) {
+            if (in_array($key, $excluded, true)) {
+                continue;
+            }
+            if (is_array($value)) {
+                if ($value === []) {
+                    continue;
+                }
+                $score += $this->nestedRichness($value);
+            } elseif ($value !== '' && $value !== null) {
+                $score++;
+            }
+        }
+        return $score;
+    }
+
+    private function nestedRichness(array $value): int
+    {
+        $count = 0;
+        foreach ($value as $v) {
+            if (is_array($v)) {
+                if ($v !== []) {
+                    $count += $this->nestedRichness($v);
+                }
+            } elseif ($v !== '' && $v !== null && $v !== false && $v !== 0) {
+                $count++;
+            }
+        }
+        return $count > 0 ? $count : 1;
+    }
+
+    /**
      * Normalize settings to a stable signature so that two nodes sharing
      * server/port/protocol but differing in any transport or TLS field (e.g.
      * client fingerprint, encryption, allowInsecure) are never merged.

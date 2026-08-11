@@ -341,6 +341,21 @@ class ThirdPartySubscriptionFeatureTest extends TestCase
         $this->assertSame(2, $result['node_count']);
     }
 
+    public function testCrossSourceDedupeKeepsMostCompleteNodeVariant()
+    {
+        $user = $this->makeUser();
+        $sourceA = $this->makeSource(['name' => 'A', 'sort' => 1]);
+        $sourceB = $this->makeSource(['name' => 'B', 'sort' => 2, 'url' => 'https://example.com/b']);
+        $this->service($this->fetcher("vless://same@a.example.com:443?type=ws&security=tls#A-Complete\n"))->sync($sourceA);
+        $this->service($this->fetcher("vless://same@a.example.com:443?type=ws&security=tls&host=cdn.example.com&path=%2Fv1&fp=chrome#B-Complete\n"))->sync($sourceB);
+
+        $servers = (new ServerService())->getAvailableServers($user);
+        $this->assertCount(1, $servers);
+        $server = $servers[0];
+        $this->assertSame('cdn.example.com', $server['network_settings']['headers']['Host']);
+        $this->assertSame('/v1', $server['network_settings']['path']);
+    }
+
     public function testDeduplicationAcrossSources()
     {
         $user = $this->makeUser();

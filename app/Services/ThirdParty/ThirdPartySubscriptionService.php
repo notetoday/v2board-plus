@@ -224,23 +224,23 @@ class ThirdPartySubscriptionService
      */
     private function deduplicate(array $nodes): array
     {
-        $seen = [];
-        $result = [];
+        $best = [];
         foreach ($nodes as $node) {
             $fingerprint = $this->converter->fingerprint($node);
-            if (isset($seen[$fingerprint])) {
+            if (!isset($best[$fingerprint])) {
+                $best[$fingerprint] = $node;
                 continue;
             }
-            $seen[$fingerprint] = true;
-            $result[] = $node;
+            if ($this->converter->richness($node) > $this->converter->richness($best[$fingerprint])) {
+                $best[$fingerprint] = $node;
+            }
         }
-        return $result;
+        return array_values($best);
     }
 
     private function deduplicateServers(array $servers): array
     {
-        $seen = [];
-        $result = [];
+        $best = [];
         foreach ($servers as $server) {
             $fingerprint = md5(json_encode([
                 $server['type'] ?? '',
@@ -248,12 +248,14 @@ class ThirdPartySubscriptionService
                 $server['port'] ?? '',
                 $server['sub_uuid'] ?? '',
             ]));
-            if (isset($seen[$fingerprint])) {
+            if (!isset($best[$fingerprint])) {
+                $best[$fingerprint] = $server;
                 continue;
             }
-            $seen[$fingerprint] = true;
-            $result[] = $server;
+            if ($this->converter->serverRichness($server) > $this->converter->serverRichness($best[$fingerprint])) {
+                $best[$fingerprint] = $server;
+            }
         }
-        return $result;
+        return array_values($best);
     }
 }
