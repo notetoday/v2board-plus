@@ -29,6 +29,12 @@ class VlessParser extends AbstractUriParser
         if (isset($parts['query'])) {
             parse_str($parts['query'], $settings);
         }
+        // VLESS URI uses `type` for the transport layer (tcp/ws/grpc/kcp/
+        // httpupgrade/xhttp). Normalize it to `network` so the converter and
+        // V2Board generators can consume it, keeping the raw value intact.
+        if (isset($settings['type']) && !isset($settings['network'])) {
+            $settings['network'] = $settings['type'];
+        }
         return self::node('vless', $parts, $uuid, $settings);
     }
 }

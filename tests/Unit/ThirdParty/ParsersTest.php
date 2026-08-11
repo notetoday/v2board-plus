@@ -27,6 +27,7 @@ class ParsersTest extends TestCase
         $this->assertSame(443, $node->port);
         $this->assertSame('a1b2c3d4-1111-2222-3333-444455556666', $node->settings['credential']);
         $this->assertSame('ws', $node->settings['type']);
+        $this->assertSame('ws', $node->settings['network']);
         $this->assertSame('tls', $node->settings['security']);
         $this->assertSame('cdn.example.com', $node->settings['sni']);
         $this->assertSame('/v2ray', $node->settings['path']);
@@ -80,6 +81,7 @@ class ParsersTest extends TestCase
         $this->assertSame(443, $node->port);
         $this->assertSame('trojan-pass', $node->settings['credential']);
         $this->assertSame('grpc', $node->settings['type']);
+        $this->assertSame('grpc', $node->settings['network']);
         $this->assertSame('test', $node->settings['serviceName']);
     }
 

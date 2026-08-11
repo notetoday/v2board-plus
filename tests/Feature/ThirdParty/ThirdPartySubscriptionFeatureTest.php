@@ -389,6 +389,55 @@ class ThirdPartySubscriptionFeatureTest extends TestCase
         $this->assertStringNotContainsString($user->uuid, $uri);
     }
 
+    public function testTransportLayerPassthroughForVlessWs()
+    {
+        $user = $this->makeUser();
+        $source = $this->makeSource();
+        $content = "vless://tp-uuid@tp-ws.example.com:443?type=ws&security=tls&sni=cdn.example.com&host=cdn.example.com&path=%2Fv2ray#TP-WS\n";
+        $result = $this->service($this->fetcher($content))->sync($source);
+        $this->assertTrue($result['success']);
+
+        $servers = (new ServerService())->getAvailableServers($user);
+        $server = collect($servers)->firstWhere('name', 'TP-WS');
+        $this->assertNotEmpty($server);
+        $this->assertSame('ws', $server['network']);
+        $this->assertSame('/v2ray', $server['network_settings']['path']);
+        $this->assertSame('cdn.example.com', $server['network_settings']['headers']['Host']);
+        $this->assertSame('cdn.example.com', $server['tls_settings']['server_name']);
+    }
+
+    public function testTransportLayerPassthroughForTrojanWs()
+    {
+        $user = $this->makeUser();
+        $source = $this->makeSource();
+        $content = "trojan://tp-pass@tp-trojan-ws.example.com:443?security=tls&sni=ws.example.com&type=ws&path=%2Fassignment&host=ws.example.com&allowInsecure=0#TP-Trojan-WS\n";
+        $result = $this->service($this->fetcher($content))->sync($source);
+        $this->assertTrue($result['success']);
+
+        $servers = (new ServerService())->getAvailableServers($user);
+        $server = collect($servers)->firstWhere('name', 'TP-Trojan-WS');
+        $this->assertNotEmpty($server);
+        $this->assertSame('ws', $server['network']);
+        $this->assertSame('/assignment', $server['network_settings']['path']);
+        $this->assertSame('ws.example.com', $server['network_settings']['headers']['Host']);
+        $this->assertSame('ws.example.com', $server['server_name']);
+    }
+
+    public function testTransportLayerPassthroughForTrojanGrpc()
+    {
+        $user = $this->makeUser();
+        $source = $this->makeSource();
+        $content = "trojan://tp-pass@tp-trojan-grpc.example.com:443?security=tls&sni=grpc.example.com&type=grpc&serviceName=test&allowInsecure=0#TP-Trojan-GRPC\n";
+        $result = $this->service($this->fetcher($content))->sync($source);
+        $this->assertTrue($result['success']);
+
+        $servers = (new ServerService())->getAvailableServers($user);
+        $server = collect($servers)->firstWhere('name', 'TP-Trojan-GRPC');
+        $this->assertNotEmpty($server);
+        $this->assertSame('grpc', $server['network']);
+        $this->assertSame('test', $server['network_settings']['serviceName']);
+    }
+
     private function nodeTableCounts(): array
     {
         $counts = [];
