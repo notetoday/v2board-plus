@@ -859,3 +859,15 @@ CHANGE `action_value` `action_value` text NULL AFTER `action`;
 
 ALTER TABLE `v2_server_v2node`
 ADD `trusted_x_forwarded_for` varchar(255) COLLATE 'utf8mb4_general_ci' NULL COMMENT '信任的x-forwarded-for头部' AFTER `network_settings`;
+CREATE TABLE IF NOT EXISTS `third_party_subscriptions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `name` varchar(255) NOT NULL DEFAULT '',
+  `url` text NOT NULL,
+  `enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `sort` int(11) NOT NULL DEFAULT '0',
+  `update_interval` int(11) NOT NULL DEFAULT '60',
+  `last_sync_at` int(11) NULL,
+  `last_error` text NULL,
+  `created_at` int(11) NOT NULL DEFAULT '0',
+  `updated_at` int(11) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
