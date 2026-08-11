@@ -320,6 +320,27 @@ class ThirdPartySubscriptionFeatureTest extends TestCase
         $this->assertSame(2, $this->service()->getCachedNodeCount((int)$source->id));
     }
 
+    public function testFingerprintVariantsOfSameNodeAreDeduplicated()
+    {
+        $source = $this->makeSource();
+        $content = "vless://same@a.example.com:443?type=ws&security=tls&host=a.example.com&path=%2Fv1&fp=chrome#A\n"
+            . "vless://same@a.example.com:443?type=ws&security=tls&host=a.example.com&path=%2Fv1&fp=edge#B\n"
+            . "vless://same@a.example.com:443?type=ws&security=tls&host=a.example.com&path=%2Fv1&fp=firefox#C\n";
+        $result = $this->service($this->fetcher($content))->sync($source);
+        $this->assertTrue($result['success']);
+        $this->assertSame(1, $result['node_count']);
+    }
+
+    public function testDifferentTransportSettingsAreNotMerged()
+    {
+        $source = $this->makeSource();
+        $content = "vless://same@a.example.com:443?type=ws&security=tls&host=a.example.com&path=%2Fv1#Ws\n"
+            . "vless://same@a.example.com:443?type=tcp&security=tls&sni=a.example.com#Tcp\n";
+        $result = $this->service($this->fetcher($content))->sync($source);
+        $this->assertTrue($result['success']);
+        $this->assertSame(2, $result['node_count']);
+    }
+
     public function testDeduplicationAcrossSources()
     {
         $user = $this->makeUser();

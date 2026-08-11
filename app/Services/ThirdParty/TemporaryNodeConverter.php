@@ -38,23 +38,46 @@ class TemporaryNodeConverter
 
     public function fingerprint(TemporaryNode $node): string
     {
+        $settings = $node->settings;
+        // `fp` is the client TLS fingerprint emulation (chrome/edge/...) and
+        // does not affect connectivity; anti-RKN style lists repeat the same
+        // endpoint with different fingerprints for different clients. Excluding
+        // it prevents noisy duplicates while any transport/TLS setting that
+        // actually changes the connection is kept in the signature.
+        unset($settings['credential'], $settings['name'], $settings['fp']);
         $key = [
             $node->type,
             $node->server,
             $node->port,
+            $this->normalizedSettings($settings),
         ];
-        $settings = $node->settings;
-        unset($settings['credential'], $settings['name']);
-        foreach ([
-            'method', 'network', 'security', 'tls', 'sni', 'host', 'path',
-            'serviceName', 'flow', 'mode', 'insecure', 'obfs', 'obfs_host',
-            'obfs_path', 'pbk', 'sid', 'peer', 'headerType', 'seed',
-        ] as $field) {
-            if (isset($settings[$field])) {
-                $key[] = $settings[$field];
+        return md5(json_encode($key));
+    }
+
+    /**
+     * Normalize settings to a stable signature so that two nodes sharing
+     * server/port/protocol but differing in any transport or TLS field (e.g.
+     * client fingerprint, encryption, allowInsecure) are never merged.
+     *
+     * @param array $settings
+     * @return array
+     */
+    private function normalizedSettings(array $settings): array
+    {
+        foreach ($settings as $key => $value) {
+            if (is_array($value)) {
+                $value = $this->normalizedSettings($value);
+                if ($value === []) {
+                    unset($settings[$key]);
+                    continue;
+                }
+                $settings[$key] = $value;
+            } elseif ($value === '' || $value === null) {
+                unset($settings[$key]);
             }
         }
-        return md5(json_encode($key));
+        ksort($settings);
+        return $settings;
     }
 
     private function base(TemporaryNode $node, int $sourceId, int $index): array
