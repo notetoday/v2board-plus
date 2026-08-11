@@ -172,7 +172,8 @@ class Helper
     {
         if ($server['type'] == 'v2node') {
             $server['type'] = $server['protocol'];
-        } 
+        }
+        $uuid = self::resolveServerCredential($uuid, $server);
         $method = "build" . ucfirst($server['type']) . "Uri";
 
         if (method_exists(self::class, $method)) {
@@ -180,6 +181,18 @@ class Helper
         }
 
         return '';
+    }
+
+    /**
+     * Third-party nodes carry their own embedded credential. When present it
+     * must override the V2Board user credential in the generated output.
+     */
+    public static function resolveServerCredential($default, $server)
+    {
+        if (isset($server['sub_uuid']) && $server['sub_uuid'] !== '') {
+            return $server['sub_uuid'];
+        }
+        return $default;
     }
 
     public static function buildUriString($scheme, $auth, $server, $name, $params = [])
@@ -199,7 +212,9 @@ class Helper
     public static function buildShadowsocksUri($uuid, $server)
     {
         $cipher = $server['cipher'];
-        if (strpos($cipher, '2022-blake3') !== false) {
+        if (isset($server['sub_uuid']) && $server['sub_uuid'] !== '') {
+            $password = $server['sub_uuid'];
+        } else if (strpos($cipher, '2022-blake3') !== false) {
             $length = $cipher === '2022-blake3-aes-128-gcm' ? 16 : 32;
             $serverKey = Helper::getServerKey($server['created_at'], $length);
             $userKey = Helper::uuidToBase64($uuid, $length);

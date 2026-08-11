@@ -2,6 +2,7 @@
 
 namespace App\Protocols;
 
+use App\Utils\Helper;
 use phpDocumentor\Reflection\Types\Self_;
 use Symfony\Component\Yaml\Yaml;
 
@@ -48,15 +49,15 @@ class Clash
                     'chacha20-ietf-poly1305'
                 ])
             ) {
-                array_push($proxy, self::buildShadowsocks($user['uuid'], $item));
+                array_push($proxy, self::buildShadowsocks(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'vmess') {
-                array_push($proxy, self::buildVmess($user['uuid'], $item));
+                array_push($proxy, self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'trojan') {
-                array_push($proxy, self::buildTrojan($user['uuid'], $item));
+                array_push($proxy, self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
         }

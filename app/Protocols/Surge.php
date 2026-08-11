@@ -33,27 +33,27 @@ class Surge
             }
             if ($item['type'] === 'shadowsocks') {
                 // [Proxy]
-                $proxies .= self::buildShadowsocks($user['uuid'], $item);
+                $proxies .= self::buildShadowsocks(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
             }elseif ($item['type'] === 'vmess') {
                 // [Proxy]
-                $proxies .= self::buildVmess($user['uuid'], $item);
+                $proxies .= self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
             }elseif ($item['type'] === 'trojan') {
                 // [Proxy]
-                $proxies .= self::buildTrojan($user['uuid'], $item);
+                $proxies .= self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
             }elseif ($item['type'] === 'hysteria' && $item['version'] === 2) { //surge只支持hysteria2
                 // [Proxy]
-                $proxies .= self::buildHysteria($user['uuid'], $item);
+                $proxies .= self::buildHysteria(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
             }elseif ($item['type'] === 'anytls') {
                 // [Proxy]
-                $proxies .= self::buildAnyTLS($user['uuid'], $item);
+                $proxies .= self::buildAnyTLS(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
             }
@@ -89,11 +89,11 @@ class Surge
 
     public static function buildShadowsocks($password, $server)
     {
-        if ($server['cipher'] === '2022-blake3-aes-128-gcm') {
+        if (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-128-gcm') {
             $serverKey = Helper::getServerKey($server['created_at'], 16);
             $userKey = Helper::uuidToBase64($password, 16);
             $password = "{$serverKey}:{$userKey}";
-        } elseif ($server['cipher'] === '2022-blake3-aes-256-gcm') {
+        } elseif (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-256-gcm') {
             $serverKey = Helper::getServerKey($server['created_at'], 32);
             $userKey = Helper::uuidToBase64($password, 32);
             $password = "{$serverKey}:{$userKey}";

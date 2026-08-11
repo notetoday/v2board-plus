@@ -97,6 +97,13 @@ class AdminRoute
                 $router->post('update', 'V1\\Admin\\Server\\V2nodeController@update');
                 $router->post('copy', 'V1\\Admin\\Server\\V2nodeController@copy');
             });
+            // Third-party subscription
+            $router->get ('/server/third-party/fetch', 'V1\\Admin\\Server\\ThirdPartySubscriptionController@fetch');
+            $router->post('/server/third-party/save', 'V1\\Admin\\Server\\ThirdPartySubscriptionController@save');
+            $router->post('/server/third-party/update', 'V1\\Admin\\Server\\ThirdPartySubscriptionController@update');
+            $router->post('/server/third-party/drop', 'V1\\Admin\\Server\\ThirdPartySubscriptionController@drop');
+            $router->post('/server/third-party/sync', 'V1\\Admin\\Server\\ThirdPartySubscriptionController@sync');
+            $router->get ('/server/third-party/status', 'V1\\Admin\\Server\\ThirdPartySubscriptionController@status');
             // Order
             $router->get ('/order/fetch', 'V1\\Admin\\OrderController@fetch');
             $router->post('/order/update', 'V1\\Admin\\OrderController@update');

@@ -234,6 +234,7 @@ class ServerService
             $this->getAvailableAnyTLS($user),
             $this->getAvailableV2node($user)
         );
+        $servers = $this->mergeThirdPartyServers($servers, $user);
         $tmp = array_column($servers, 'sort');
         array_multisort($tmp, SORT_ASC, $servers);
         return array_map(function ($server) {
@@ -246,6 +247,21 @@ class ServerService
             $server['cache_key'] = "{$server['type']}-{$server['id']}-{$server['updated_at']}-{$server['is_online']}";
             return $server;
         }, $servers);
+    }
+
+    private function mergeThirdPartyServers(array $servers, User $user): array
+    {
+        try {
+            $thirdPartyService = new \App\Services\ThirdParty\ThirdPartySubscriptionService();
+            $thirdPartyServers = $thirdPartyService->getAvailableServersForUser($user);
+        } catch (\Throwable $e) {
+            // Third-party aggregation must never break V2Board's own nodes.
+            return $servers;
+        }
+        if (empty($thirdPartyServers)) {
+            return $servers;
+        }
+        return array_merge($servers, $thirdPartyServers);
     }
 
     public function getAvailableUsers($groupId)

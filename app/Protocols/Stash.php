@@ -41,35 +41,35 @@ class Stash
                 $item['type'] = $item['protocol'];
             }
             if ($item['type'] === 'shadowsocks') {
-                array_push($proxy, self::buildShadowsocks($user['uuid'], $item));
+                array_push($proxy, self::buildShadowsocks(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'vmess') {
-                array_push($proxy, self::buildVmess($user['uuid'], $item));
+                array_push($proxy, self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'vless') {
-                array_push($proxy, self::buildVless($user['uuid'], $item));
+                array_push($proxy, self::buildVless(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'trojan') {
-                array_push($proxy, self::buildTrojan($user['uuid'], $item));
+                array_push($proxy, self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'tuic') {
-                array_push($proxy, self::buildTuic($user['uuid'], $item));
+                array_push($proxy, self::buildTuic(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'hysteria') {
-                array_push($proxy, self::buildHysteria($user['uuid'], $item));
+                array_push($proxy, self::buildHysteria(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'hysteria2') {
-                array_push($proxy, self::buildHysteria2($user['uuid'], $item));
+                array_push($proxy, self::buildHysteria2(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'anytls') {
-                array_push($proxy, self::buildAnyTLS($user['uuid'], $item));
+                array_push($proxy, self::buildAnyTLS(Helper::resolveServerCredential($user['uuid'], $item), $item));
                 array_push($proxies, $item['name']);
             }
         }
@@ -109,11 +109,11 @@ class Stash
 
     public static function buildShadowsocks($password, $server)
     {
-        if ($server['cipher'] === '2022-blake3-aes-128-gcm') {
+        if (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-128-gcm') {
             $serverKey = Helper::getServerKey($server['created_at'], 16);
             $userKey = Helper::uuidToBase64($password, 16);
             $password = "{$serverKey}:{$userKey}";
-        } elseif ($server['cipher'] === '2022-blake3-aes-256-gcm') {
+        } elseif (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-256-gcm') {
             $serverKey = Helper::getServerKey($server['created_at'], 32);
             $userKey = Helper::uuidToBase64($password, 32);
             $password = "{$serverKey}:{$userKey}";

@@ -43,6 +43,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('send:remindMail')->dailyAt('11:30');
         // horizon metrics
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
+        // third-party subscriptions
+        $schedule->command('third-party:sync')->everyMinute()->withoutOverlapping();
     }
 
     /**

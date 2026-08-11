@@ -2,6 +2,8 @@
 
 namespace App\Protocols;
 
+use App\Utils\Helper;
+
 class Shadowsocks
 {
     public $flag = 'shadowsocks';
@@ -51,7 +53,7 @@ class Shadowsocks
             "remarks" => $server['name'],
             "server" => $server['host'],
             "server_port" => $server['port'],
-            "password" => $user['uuid'],
+            "password" => Helper::resolveServerCredential($user['uuid'], $server),
             "method" => $server['cipher']
         ];
         return $config;

@@ -51,23 +51,23 @@ class SingboxOld
                 $item['type'] = $item['protocol'];
             }
             if ($item['type'] === 'shadowsocks') {
-                $ssConfig = $this->buildShadowsocks($this->user['uuid'], $item);
+                $ssConfig = $this->buildShadowsocks(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                 $proxies[] = $ssConfig;
             }
             if ($item['type'] === 'trojan') {
-                $trojanConfig = $this->buildTrojan($this->user['uuid'], $item);
+                $trojanConfig = $this->buildTrojan(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                 $proxies[] = $trojanConfig;
             }
             if ($item['type'] === 'vmess') {
-                $vmessConfig = $this->buildVmess($this->user['uuid'], $item);
+                $vmessConfig = $this->buildVmess(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                 $proxies[] = $vmessConfig;
             }
             if ($item['type'] === 'vless') {
-                $vlessConfig = $this->buildVless($this->user['uuid'], $item);
+                $vlessConfig = $this->buildVless(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                 $proxies[] = $vlessConfig;
             }
             if ($item['type'] === 'tuic') {
-                $tuicConfig = $this->buildTuic($this->user['uuid'], $item);
+                $tuicConfig = $this->buildTuic(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                 $proxies[] = $tuicConfig;
             }
             if ($item['type'] === 'hysteria') {
@@ -97,7 +97,7 @@ class SingboxOld
 
     protected function buildShadowsocks($password, $server)
     {
-        if (strpos($server['cipher'], '2022-blake3') !== false) {
+        if (!isset($server['sub_uuid']) && strpos($server['cipher'], '2022-blake3') !== false) {
             $length = $server['cipher'] === '2022-blake3-aes-128-gcm' ? 16 : 32;
             $serverKey = Helper::getServerKey($server['created_at'], $length);
             $userKey = Helper::uuidToBase64($password, $length);

@@ -33,6 +33,7 @@ class QuantumultX
             if (($item['type'] ?? null) === 'v2node' && isset($item['protocol'])) {
                 $item['type'] = $item['protocol'];
             }
+            $uuid = Helper::resolveServerCredential($user['uuid'] ?? '', $item);
 
             // 提前过滤不支持的传输协议 (QX 不支持 gRPC, HTTPUpgrade, XHTTP)
             $network = $item['network'] ?? 'tcp';
@@ -80,7 +81,7 @@ class QuantumultX
         }
 
         // ss2022 处理
-        if (in_array($server['cipher'], ['2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm'])) {
+        if (!isset($server['sub_uuid']) && in_array($server['cipher'], ['2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm'])) {
             $length = ($server['cipher'] === '2022-blake3-aes-128-gcm') ? 16 : 32;
             $serverKey = Helper::getServerKey($server['created_at'], $length);
             $userKey = Helper::uuidToBase64($password, $length);

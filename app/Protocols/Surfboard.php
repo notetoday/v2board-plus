@@ -40,25 +40,25 @@ class Surfboard
                 ])
             ) {
                 // [Proxy]
-                $proxies .= self::buildShadowsocks($user['uuid'], $item);
+                $proxies .= self::buildShadowsocks(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
             }
             if ($item['type'] === 'vmess') {
                 // [Proxy]
-                $proxies .= self::buildVmess($user['uuid'], $item);
+                $proxies .= self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
             }
             if ($item['type'] === 'trojan') {
                 // [Proxy]
-                $proxies .= self::buildTrojan($user['uuid'], $item);
+                $proxies .= self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
             }
             if ($item['type'] === 'anytls') {
                 // [Proxy]
-                $proxies .= self::buildAnyTLS($user['uuid'], $item);
+                $proxies .= self::buildAnyTLS(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
             }

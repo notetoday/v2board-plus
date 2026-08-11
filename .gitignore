@@ -9,7 +9,9 @@
 /vendor
 .env
 .env.backup
+.env.testing
 .phpunit.result.cache
+dump.rdb
 .idea
 .lock
 Homestead.json

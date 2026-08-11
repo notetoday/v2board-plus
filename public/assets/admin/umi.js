@@ -21039,6 +21039,13 @@
                             className: "nav-main-link-icon si si-layers"
                         })
                     }, {
+                        title: "\u7b2c\u4e09\u65b9\u8ba2\u9605",
+                        type: "item",
+                        href: "/server/third-party",
+                        icon: o.a.createElement("i", {
+                            className: "nav-main-link-icon si si-link"
+                        })
+                    }, {
                         title: "\u6743\u9650\u7ec4\u7ba1\u7406",
                         type: "item",
                         href: "/server/group",
@@ -82267,6 +82274,374 @@
             return r.SlowBuffer(e)
         }
     },
+    tp3rd: function(e, t, n) {
+        "use strict";
+        n.r(t);
+        var i = n("jehZ")
+          , a = n.n(i)
+          , o = n("t3Un")
+          , r = n("q1tI")
+          , s = n.n(r)
+          , l = (n("g9YV"),
+        n("wCAj"))
+          , c = (n("+L6B"),
+        n("2/Rp"))
+          , u = (n("Pwec"),
+        n("CtXQ"))
+          , h = (n("BoS7"),
+        n("Sdc0"))
+          , f = (n("5NDa"),
+        n("5rEg"))
+          , d = (n("2qtc"),
+        n("kLXV"))
+          , p = (n("OaEy"),
+        n("2fM7"))
+          , m = n("Bl7J")
+          , g = n("v32e")
+          , v = n("wd/R")
+          , y = n.n(v)
+          , b = n("TeRw");
+        class _ extends s.a.Component {
+            constructor(e) {
+                super(e),
+                this.state = {
+                    visible: !1,
+                    submit: {},
+                    sources: [],
+                    loading: !1,
+                    saving: !1
+                }
+            }
+            componentDidMount() {
+                this.load()
+            }
+            load() {
+                var e = this;
+                this.setState({
+                    loading: !0
+                }),
+                Object(o["a"])("/" + window.settings.secure_path + "/server/third-party/fetch").then(function(t) {
+                    e.setState({
+                        loading: !1,
+                        sources: 200 === t.code ? t.data : []
+                    })
+                })
+            }
+            modalVisible() {
+                this.setState({
+                    visible: !this.state.visible,
+                    submit: {}
+                })
+            }
+            edit(e) {
+                this.setState({
+                    submit: e,
+                    visible: !0
+                })
+            }
+            save() {
+                var e = this
+                  , t = a()({}, this.state.submit, {
+                    enabled: this.state.submit.enabled ? 1 : 0
+                });
+                this.setState({
+                    saving: !0
+                }),
+                Object(o["b"])("/" + window.settings.secure_path + "/server/third-party/save", t).then(function(r) {
+                    e.setState({
+                        saving: !1
+                    }),
+                    200 === r.code && (Object(b["a"]).success({
+                        message: "\u4fdd\u5b58\u6210\u529f",
+                        duration: 1.5
+                    }),
+                    e.modalVisible(),
+                    e.load())
+                })
+            }
+            toggle(e, t) {
+                var n = this;
+                Object(o["b"])("/" + window.settings.secure_path + "/server/third-party/update", {
+                    id: e.id,
+                    enabled: t ? 1 : 0
+                }).then(function() {
+                    n.load()
+                })
+            }
+            drop(e) {
+                var t = this;
+                Object(d["a"]).confirm({
+                    title: "\u5220\u9664\u8ba2\u9605\u6e90",
+                    content: "\u786e\u5b9a\u5220\u9664 ".concat(e.name, " \u5417\uff1f"),
+                    okText: "\u5220\u9664",
+                    cancelText: "\u53d6\u6d88",
+                    onOk: function() {
+                        return Object(o["b"])("/" + window.settings.secure_path + "/server/third-party/drop", {
+                            id: e.id
+                        }).then(function(r) {
+                            200 === r.code && (Object(b["a"]).success({
+                                message: "\u5220\u9664\u6210\u529f",
+                                duration: 1.5
+                            }),
+                            t.load())
+                        })
+                    }
+                })
+            }
+            syncOne(e) {
+                var t = this;
+                Object(o["b"])("/" + window.settings.secure_path + "/server/third-party/sync", {
+                    id: e.id
+                }).then(function(r) {
+                    if (200 === r.code) {
+                        if (r.data.success) {
+                            Object(b["a"]).success({
+                                message: "\u540c\u6b65\u6210\u529f",
+                                description: "\u8282\u70b9\u6570: ".concat(r.data.node_count),
+                                duration: 1.5
+                            })
+                        } else {
+                            Object(b["a"]).error({
+                                message: "\u540c\u6b65\u5931\u8d25",
+                                description: r.data.error || "",
+                                duration: 3
+                            })
+                        }
+                    }
+                    t.load()
+                })
+            }
+            syncAll() {
+                var e = this;
+                this.setState({
+                    loading: !0
+                }),
+                Object(o["b"])("/" + window.settings.secure_path + "/server/third-party/sync").then(function() {
+                    e.setState({
+                        loading: !1
+                    }),
+                    Object(b["a"]).success({
+                        message: "\u540c\u6b65\u5b8c\u6210",
+                        duration: 1.5
+                    }),
+                    e.load()
+                })
+            }
+            render() {
+                var e = this
+                  , t = this.state.sources
+                  , n = this.state.loading
+                  , r = [{
+                    title: "ID",
+                    dataIndex: "id",
+                    key: "id",
+                    width: 70
+                }, {
+                    title: "\u540d\u79f0",
+                    dataIndex: "name",
+                    key: "name"
+                }, {
+                    title: "\u5730\u5740",
+                    dataIndex: "url",
+                    key: "url",
+                    ellipsis: !0,
+                    render: function(t) {
+                        return s.a.createElement("a", {
+                            href: t,
+                            target: "_blank",
+                            rel: "noreferrer",
+                            style: {
+                                wordBreak: "break-all"
+                            }
+                        }, t)
+                    }
+                }, {
+                    title: "\u542f\u7528",
+                    dataIndex: "enabled",
+                    key: "enabled",
+                    render: function(t, n) {
+                        return s.a.createElement(h["a"], {
+                            size: "small",
+                            checked: !!t,
+                            onChange: function(t) {
+                                e.toggle(n, t)
+                            }
+                        })
+                    }
+                }, {
+                    title: "\u8282\u70b9\u6570",
+                    dataIndex: "node_count",
+                    key: "node_count",
+                    align: "right",
+                    render: function(t) {
+                        return null == t ? "-" : t
+                    }
+                }, {
+                    title: "\u540c\u6b65\u65f6\u95f4",
+                    dataIndex: "fetched_at",
+                    key: "fetched_at",
+                    render: function(t) {
+                        return t ? y()(1e3 * t).format("YYYY/MM/DD HH:mm") : "-"
+                    }
+                }, {
+                    title: "\u66f4\u65b0\u95f4\u9694",
+                    dataIndex: "update_interval",
+                    key: "update_interval",
+                    align: "right",
+                    render: function(t) {
+                        return t ? t + " \u5206\u949f" : "-"
+                    }
+                }, {
+                    title: "\u6700\u8fd1\u9519\u8bef",
+                    dataIndex: "last_error",
+                    key: "last_error",
+                    ellipsis: !0,
+                    render: function(t) {
+                        return t ? s.a.createElement("span", {
+                            style: {
+                                color: "#e3342f"
+                            }
+                        }, t) : "-"
+                    }
+                }, {
+                    title: "\u64cd\u4f5c",
+                    dataIndex: "action",
+                    key: "action",
+                    align: "right",
+                    fixed: "right",
+                    render: function(t, n) {
+                        return s.a.createElement("div", null, s.a.createElement("a", {
+                            href: "javascript:void(0);",
+                            onClick: function() {
+                                e.syncOne(n)
+                            }
+                        }, "\u540c\u6b65"), s.a.createElement(p["a"], {
+                            type: "vertical"
+                        }), s.a.createElement("a", {
+                            href: "javascript:void(0);",
+                            onClick: function() {
+                                e.edit(n)
+                            }
+                        }, "\u7f16\u8f91"), s.a.createElement(p["a"], {
+                            type: "vertical"
+                        }), s.a.createElement("a", {
+                            href: "javascript:void(0);",
+                            onClick: function() {
+                                e.drop(n)
+                            }
+                        }, "\u5220\u9664"))
+                    }
+                }];
+                return s.a.createElement(m["a"], a()({}, this.props, {
+                    title: "\u7b2c\u4e09\u65b9\u8ba2\u9605"
+                }), s.a.createElement("div", {
+                    className: "d-flex justify-content-between align-items-center"
+                }, s.a.createElement("div", {
+                    className: "block block-rounded"
+                }, s.a.createElement("div", {
+                    className: "bg-white"
+                }, s.a.createElement("div", {
+                    style: {
+                        padding: 15
+                    }
+                }, s.a.createElement(c["a"], {
+                    type: "primary",
+                    onClick: ()=>this.modalVisible()
+                }, s.a.createElement(u["a"], {
+                    type: "plus"
+                }), " \u6dfb\u52a0\u8ba2\u9605\u6e90"), s.a.createElement(c["a"], {
+                    style: {
+                        marginLeft: 8
+                    },
+                    onClick: ()=>this.syncAll()
+                }, s.a.createElement(u["a"], {
+                    type: "sync"
+                }), " \u5168\u90e8\u540c\u6b65")), s.a.createElement(g["a"], {
+                    loading: n
+                }, s.a.createElement(l["a"], {
+                    tableLayout: "auto",
+                    dataSource: t,
+                    pagination: !1,
+                    columns: r,
+                    scroll: {
+                        x: 1200
+                    }
+                }))))), s.a.createElement(d["a"], {
+                    title: this.state.submit.id ? "\u7f16\u8f91\u8ba2\u9605\u6e90" : "\u65b0\u5efa\u8ba2\u9605\u6e90",
+                    visible: this.state.visible,
+                    onCancel: ()=>this.modalVisible(),
+                    onOk: ()=>this.state.saving || this.save(),
+                    okText: this.state.saving ? s.a.createElement(u["a"], {
+                        type: "loading"
+                    }) : "\u63d0\u4ea4",
+                    cancelText: "\u53d6\u6d88",
+                    width: 600
+                }, s.a.createElement("div", null, s.a.createElement("div", {
+                    className: "form-group"
+                }, s.a.createElement("label", null, "\u540d\u79f0"), s.a.createElement(f["a"], {
+                    placeholder: "\u8bf7\u8f93\u5165\u8ba2\u9605\u540d\u79f0",
+                    value: this.state.submit.name,
+                    onChange: e=>{
+                        this.setState({
+                            submit: a()({}, this.state.submit, {
+                                name: e.target.value
+                            })
+                        })
+                    }
+                })), s.a.createElement("div", {
+                    className: "form-group"
+                }, s.a.createElement("label", null, "\u5730\u5740"), s.a.createElement(f["a"], {
+                    placeholder: "https://example.com/sub?token=xxx",
+                    value: this.state.submit.url,
+                    onChange: e=>{
+                        this.setState({
+                            submit: a()({}, this.state.submit, {
+                                url: e.target.value
+                            })
+                        })
+                    }
+                })), s.a.createElement("div", {
+                    className: "form-group"
+                }, s.a.createElement("label", null, "\u66f4\u65b0\u95f4\u9694(\u5206\u949f)"), s.a.createElement(f["a"], {
+                    placeholder: "60",
+                    type: "number",
+                    value: this.state.submit.update_interval,
+                    onChange: e=>{
+                        this.setState({
+                            submit: a()({}, this.state.submit, {
+                                update_interval: e.target.value
+                            })
+                        })
+                    }
+                })), s.a.createElement("div", {
+                    className: "form-group"
+                }, s.a.createElement("label", null, "\u6392\u5e8f"), s.a.createElement(f["a"], {
+                    placeholder: "0",
+                    type: "number",
+                    value: this.state.submit.sort,
+                    onChange: e=>{
+                        this.setState({
+                            submit: a()({}, this.state.submit, {
+                                sort: e.target.value
+                            })
+                        })
+                    }
+                })), s.a.createElement("div", {
+                    className: "form-group"
+                }, s.a.createElement("label", null, "\u542f\u7528"), s.a.createElement("div", null, s.a.createElement(h["a"], {
+                    checked: !!this.state.submit.enabled,
+                    onChange: e=>{
+                        this.setState({
+                            submit: a()({}, this.state.submit, {
+                                enabled: e ? 1 : 0
+                            })
+                        })
+                    }
+                }))))))
+            }
+        }
+        t["default"] = _
+    },
     i4x8: function(e, t, n) {
         "use strict";
         n.r(t),
@@ -82343,6 +82718,10 @@
             path: "/server/manage",
             exact: !0,
             component: n("uzXD").default
+        }, {
+            path: "/server/third-party",
+            exact: !0,
+            component: n("tp3rd").default
         }, {
             path: "/server/route",
             exact: !0,

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\ThirdParty\SubscriptionFetcher;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,7 +14,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        // Prevent the container from auto-wiring a Guzzle client into the
+        // fetcher. A container-resolved client would be treated as a custom
+        // client and skip the CURLOPT_RESOLVE SSRF/DNS-rebinding pinning.
+        $this->app->bind(SubscriptionFetcher::class, function () {
+            return new SubscriptionFetcher();
+        });
     }
 
     /**

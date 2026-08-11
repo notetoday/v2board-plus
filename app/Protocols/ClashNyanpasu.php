@@ -42,35 +42,35 @@ class ClashNyanpasu
             }
             switch ($item['type']) {
                 case 'shadowsocks':
-                    $proxy[] = self::buildShadowsocks($user['uuid'], $item);
+                    $proxy[] = self::buildShadowsocks(Helper::resolveServerCredential($user['uuid'], $item), $item);
                     $proxies[] = $item['name'];
                     break;
                 case 'vmess':
-                    $proxy[] = self::buildVmess($user['uuid'], $item);
+                    $proxy[] = self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item);
                     $proxies[] = $item['name'];
                     break;
                 case 'vless':
-                    $proxy[] = self::buildVless($user['uuid'], $item);
+                    $proxy[] = self::buildVless(Helper::resolveServerCredential($user['uuid'], $item), $item);
                     $proxies[] = $item['name'];
                     break;
                 case 'trojan':
-                    $proxy[] = self::buildTrojan($user['uuid'], $item);
+                    $proxy[] = self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item);
                     $proxies[] = $item['name'];
                     break;
                 case 'tuic':
-                    $proxy[] = self::buildTuic($user['uuid'], $item);
+                    $proxy[] = self::buildTuic(Helper::resolveServerCredential($user['uuid'], $item), $item);
                     $proxies[] = $item['name'];
                     break;
                 case 'anytls':
-                    $proxy[] = self::buildAnyTLS($user['uuid'], $item);
+                    $proxy[] = self::buildAnyTLS(Helper::resolveServerCredential($user['uuid'], $item), $item);
                     $proxies[] = $item['name'];
                     break;
                 case 'hysteria':
-                    $proxy[] = self::buildHysteria($user['uuid'], $item);
+                    $proxy[] = self::buildHysteria(Helper::resolveServerCredential($user['uuid'], $item), $item);
                     $proxies[] = $item['name'];
                     break;
                 case 'hysteria2':
-                    $proxy[] = $this->buildHysteria2($user['uuid'], $item);
+                    $proxy[] = $this->buildHysteria2(Helper::resolveServerCredential($user['uuid'], $item), $item);
                     $proxies[] = $item['name'];
                     break;
             }
@@ -111,12 +111,12 @@ class ClashNyanpasu
 
     public static function buildShadowsocks($password, $server)
     {
-        if ($server['cipher'] === '2022-blake3-aes-128-gcm') {
+        if (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-128-gcm') {
             $serverKey = Helper::getServerKey($server['created_at'], 16);
             $userKey = Helper::uuidToBase64($password, 16);
             $password = "{$serverKey}:{$userKey}";
         }
-        if ($server['cipher'] === '2022-blake3-aes-256-gcm') {
+        if (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-256-gcm') {
             $serverKey = Helper::getServerKey($server['created_at'], 32);
             $userKey = Helper::uuidToBase64($password, 32);
             $password = "{$serverKey}:{$userKey}";

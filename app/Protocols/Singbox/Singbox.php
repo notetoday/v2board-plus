@@ -52,27 +52,27 @@ class Singbox
             }
             switch ($item['type']) {
                 case 'shadowsocks':
-                    $ssConfig = $this->buildShadowsocks($this->user['uuid'], $item);
+                    $ssConfig = $this->buildShadowsocks(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                     $proxies[] = $ssConfig;
                     break;
                 case 'trojan':
-                    $trojanConfig = $this->buildTrojan($this->user['uuid'], $item);
+                    $trojanConfig = $this->buildTrojan(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                     $proxies[] = $trojanConfig;
                     break;
                 case 'vmess':
-                    $vmessConfig = $this->buildVmess($this->user['uuid'], $item);
+                    $vmessConfig = $this->buildVmess(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                     $proxies[] = $vmessConfig;
                     break;
                 case 'vless':
-                    $vlessConfig = $this->buildVless($this->user['uuid'], $item);
+                    $vlessConfig = $this->buildVless(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                     $proxies[] = $vlessConfig;
                     break;
                 case 'tuic':
-                    $tuicConfig = $this->buildTuic($this->user['uuid'], $item);
+                    $tuicConfig = $this->buildTuic(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                     $proxies[] = $tuicConfig;
                     break;
                 case 'anytls':
-                    $anytlsConfig = $this->buildAnyTLS($this->user['uuid'], $item);
+                    $anytlsConfig = $this->buildAnyTLS(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                     $proxies[] = $anytlsConfig;
                     break;
                 case 'hysteria':
@@ -80,7 +80,7 @@ class Singbox
                     $proxies[] = $hysteriaConfig;
                     break;
                 case 'hysteria2':
-                    $hysteria2Config = $this->buildHysteria2($this->user['uuid'], $item);
+                    $hysteria2Config = $this->buildHysteria2(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
                     $proxies[] = $hysteria2Config;
                     break;
             }
@@ -103,7 +103,7 @@ class Singbox
 
     protected function buildShadowsocks($password, $server)
     {
-        if (strpos($server['cipher'], '2022-blake3') !== false) {
+        if (!isset($server['sub_uuid']) && strpos($server['cipher'], '2022-blake3') !== false) {
             $length = $server['cipher'] === '2022-blake3-aes-128-gcm' ? 16 : 32;
             $serverKey = Helper::getServerKey($server['created_at'], $length);
             $userKey = Helper::uuidToBase64($password, $length);
