@@ -86,11 +86,13 @@ last_sync_at, last_error, created_at, updated_at
 | `478b196` | 本开发接续文档 + AGENTS.md 引用指令 |
 | `9c40442` | **缓存改 Redis store**：第三方节点缓存从 file cache 切换到 `Cache::store('redis')`，规避 root cron 与 php-fpm(www) 写同一 file cache 的属主冲突 |
 | `44e778c` | **操作列分隔符修复**：第三方订阅管理页操作列误用了 antd Select（`2fM7` 模块）当 Divider，替换为纯文本 `<span>\|</span>` 分隔，消除误渲染的下拉框 |
+| `c50b253` | **完全不去重**：按用户要求移除 sync 与合并阶段的两层去重（`deduplicate`/`deduplicateServers` 及 converter 的 fingerprint/richness 辅助），第三方订阅节点原样保留。已同步更新去重相关测试 |
 
 ## 六、测试状态
 
-- `vendor/bin/phpunit` 全量通过：**58 tests / 189 assertions**（截至 `44e778c`）
-- 覆盖：Parser（各协议/非法/空/部分损坏/重复）、Fetcher（200/404/500/timeout/redirect/large/invalid content-type）、Aggregator（只有自有/只有第三方/两者混合/多源/部分源失败/缓存存在/缓存过期）、Persistence（第三方节点不落库，`Node::count()` 不变）、跨源去重择优
+- `vendor/bin/phpunit` 全量通过：**58 tests / 187 assertions**（截至 `c50b253`）
+- 覆盖：Parser（各协议/非法/空/部分损坏/重复）、Fetcher（200/404/500/timeout/redirect/large/invalid content-type）、Aggregator（只有自有/只有第三方/两者混合/多源/部分源失败/缓存存在/缓存过期）、Persistence（第三方节点不落库，`Node::count()` 不变）
+- `c50b253` 起**不去重**：重复节点、跨源相同节点、仅指纹/传输参数不同的节点全部原样保留（含 3 对同 server:port 不同配置的节点）
 - `9c40442` 后缓存改为 redis store，测试中直接写入缓存的断言已同步改为 `Cache::store('redis')`
 
 ## 七、真实订阅验证（本地测试环境）
