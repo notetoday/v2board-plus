@@ -82508,6 +82508,7 @@
                     dataIndex: "action",
                     key: "action",
                     align: "right",
+                    fixed: "right",
                     render: function(t, n) {
                         return s.a.createElement("div", null, s.a.createElement("a", {
                             href: "javascript:void(0);",
