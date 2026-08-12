@@ -62,7 +62,6 @@ class ThirdPartySubscriptionService
         }
 
         $nodes = $this->parserManager->parse($content);
-        $nodes = $this->deduplicate($nodes);
 
         if (empty($nodes)) {
             $error = 'parsed subscription contained no usable nodes';
@@ -149,7 +148,7 @@ class ThirdPartySubscriptionService
             }
         }
 
-        return $this->deduplicateServers($servers);
+        return $servers;
     }
 
     /**
@@ -213,49 +212,5 @@ class ThirdPartySubscriptionService
         } catch (\Throwable $e) {
             // Never escalate database write errors during sync.
         }
-    }
-
-    /**
-     * Deduplicate parsed nodes in-memory using a protocol+server+port+settings
-     * fingerprint.
-     *
-     * @param TemporaryNode[] $nodes
-     * @return TemporaryNode[]
-     */
-    private function deduplicate(array $nodes): array
-    {
-        $best = [];
-        foreach ($nodes as $node) {
-            $fingerprint = $this->converter->fingerprint($node);
-            if (!isset($best[$fingerprint])) {
-                $best[$fingerprint] = $node;
-                continue;
-            }
-            if ($this->converter->richness($node) > $this->converter->richness($best[$fingerprint])) {
-                $best[$fingerprint] = $node;
-            }
-        }
-        return array_values($best);
-    }
-
-    private function deduplicateServers(array $servers): array
-    {
-        $best = [];
-        foreach ($servers as $server) {
-            $fingerprint = md5(json_encode([
-                $server['type'] ?? '',
-                $server['host'] ?? '',
-                $server['port'] ?? '',
-                $server['sub_uuid'] ?? '',
-            ]));
-            if (!isset($best[$fingerprint])) {
-                $best[$fingerprint] = $server;
-                continue;
-            }
-            if ($this->converter->serverRichness($server) > $this->converter->serverRichness($best[$fingerprint])) {
-                $best[$fingerprint] = $server;
-            }
-        }
-        return array_values($best);
     }
 }
