@@ -82515,16 +82515,22 @@
                             onClick: function() {
                                 e.syncOne(n)
                             }
-                        }, "\u540c\u6b65"), s.a.createElement(p["a"], {
-                            type: "vertical"
-                        }), s.a.createElement("a", {
+                        }, "\u540c\u6b65"), s.a.createElement("span", {
+                            style: {
+                                margin: "0 6px",
+                                color: "#d3d3d3"
+                            }
+                        }, "|"), s.a.createElement("a", {
                             href: "javascript:void(0);",
                             onClick: function() {
                                 e.edit(n)
                             }
-                        }, "\u7f16\u8f91"), s.a.createElement(p["a"], {
-                            type: "vertical"
-                        }), s.a.createElement("a", {
+                        }, "\u7f16\u8f91"), s.a.createElement("span", {
+                            style: {
+                                margin: "0 6px",
+                                color: "#d3d3d3"
+                            }
+                        }, "|"), s.a.createElement("a", {
                             href: "javascript:void(0);",
                             onClick: function() {
                                 e.drop(n)
