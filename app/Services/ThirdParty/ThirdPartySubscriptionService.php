@@ -157,7 +157,7 @@ class ThirdPartySubscriptionService
      */
     public function getCachedNodes(int $sourceId): array
     {
-        $cached = Cache::get(self::cacheKey($sourceId));
+        $cached = Cache::store('redis')->get(self::cacheKey($sourceId));
         if (!is_array($cached) || empty($cached['parsed_nodes'])) {
             return [];
         }
@@ -182,7 +182,7 @@ class ThirdPartySubscriptionService
 
     public function getCacheFetchedAt(int $sourceId): ?int
     {
-        $cached = Cache::get(self::cacheKey($sourceId));
+        $cached = Cache::store('redis')->get(self::cacheKey($sourceId));
         if (!is_array($cached)) {
             return null;
         }
@@ -191,7 +191,7 @@ class ThirdPartySubscriptionService
 
     public function clearCache(int $sourceId): void
     {
-        Cache::forget(self::cacheKey($sourceId));
+        Cache::store('redis')->forget(self::cacheKey($sourceId));
     }
 
     private function storeCache(ThirdPartySubscription $source, array $nodes): void
@@ -202,7 +202,7 @@ class ThirdPartySubscriptionService
             'expires_at' => time() + $this->cacheExpiresIn($source),
             'parsed_nodes' => array_map(fn(TemporaryNode $node) => $node->toArray(), $nodes),
         ];
-        Cache::put(self::cacheKey((int)$source->id), $payload, $this->cacheExpiresIn($source));
+        Cache::store('redis')->put(self::cacheKey((int)$source->id), $payload, $this->cacheExpiresIn($source));
     }
 
     private function markFailed(ThirdPartySubscription $source, string $error): void

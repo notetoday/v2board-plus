@@ -60,7 +60,7 @@ class ThirdPartySubscriptionFeatureTest extends TestCase
             }
         }
         foreach (ThirdPartySubscription::all() as $source) {
-            Cache::forget(ThirdPartySubscriptionService::cacheKey((int)$source->id));
+            Cache::store('redis')->forget(ThirdPartySubscriptionService::cacheKey((int)$source->id));
         }
         config(['v2board.third_party_subscription_enable' => 1]);
         config(['v2board.third_party_subscription_groups' => '']);
@@ -254,7 +254,7 @@ class ThirdPartySubscriptionFeatureTest extends TestCase
         $this->service($this->fetcher($this->subscribeContent()))->sync($source);
 
         $node = new TemporaryNode('vless', 'Stale-Node', 'stale.example.com', 443, ['credential' => 'stale-uuid', 'type' => 'tcp', 'security' => 'none']);
-        Cache::put(ThirdPartySubscriptionService::cacheKey((int)$source->id), [
+        Cache::store('redis')->put(ThirdPartySubscriptionService::cacheKey((int)$source->id), [
             'source_id' => (int)$source->id,
             'fetched_at' => time() - 7200,
             'expires_at' => time() - 3600,
