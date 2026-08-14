@@ -63,7 +63,9 @@ Redis 缓存（parsed_nodes / fetched_at / expires_at）
 - `app/Protocols/Clash.php`：协议覆盖对齐 `ClashMeta`，新增 `vless`/`tuic`/`hysteria`/`hysteria2`/`anytls` 分支与 builder（此前仅输出 ss/vmess/trojan，导致 Clash 订阅漏掉第三方 vless 等节点）
 - `app/Http/Controllers/V1/Client/AppController.php`：App 内置 Clash 配置同样补齐全部协议
 - `app/Protocols/Surge.php` / `Surfboard.php` / `Loon.php`：新增 `tuic`、`hysteria2`（type 兼容 `hysteria+version=2`）分支；并统一 `buildVmess` 对第三方节点（snake_case：`tls_settings`/`network_settings`/`allow_insecure`/`server_name`）与自有节点（camelCase）的字段大小写兼容，此前第三方 vmess 在 Surge/Surfboard/Loon 会丢 TLS/WS 参数
-- `tests/Feature/ProtocolConsistencyTest.php`：跨客户端（Clash/Shadowrocket/Surge/Surfboard/Loon/QuantumultX）协议输出与第三方 vmess 参数透传的回归测试
+- `app/Protocols/Loon.php`：`buildVless` 放行条件扩为 `tcp|ws|http|h2`，对 `http|h2` 输出 `transport=http`（透传 path/host）；xhttp/grpc 因 Loon 客户端不支持，保持跳过
+- `app/Protocols/Stash.php`：`buildVless` 新增 xhttp 输出（`network: xhttp` + `xhttp-opts` 的 path/host/mode）；`buildVmess` 统一 snake/camel 兼容，此前第三方 vmess 在 Stash 会丢 TLS/WS/GRPC 参数
+- `tests/Feature/ProtocolConsistencyTest.php`：跨客户端（Clash/Shadowrocket/Surge/Surfboard/Loon/QuantumultX/Stash）协议输出、第三方 vmess 参数透传、VLESS xhttp/h2/grpc 传输层覆盖的回归测试
 
 ## 四、数据库
 
@@ -95,7 +97,7 @@ last_sync_at, last_error, created_at, updated_at
 
 ## 六、测试状态
 
-- `vendor/bin/phpunit` 全量通过：**64 tests / 226 assertions**（截至 `7e01d03`）
+- `vendor/bin/phpunit` 全量通过：**65 tests / 238 assertions**（截至本轮 Loon http/h2 + Stash xhttp/字段兼容修复）
 - 覆盖：Parser（各协议/非法/空/部分损坏/重复）、Fetcher（200/404/500/timeout/redirect/large/invalid content-type）、Aggregator（只有自有/只有第三方/两者混合/多源/部分源失败/缓存存在/缓存过期）、Persistence（第三方节点不落库，`Node::count()` 不变）、ProtocolConsistency（各客户端协议输出 + 第三方 vmess snake_case 参数透传）
 - `c50b253` 起**不去重**：重复节点、跨源相同节点、仅指纹/传输参数不同的节点全部原样保留（含 3 对同 server:port 不同配置的节点）
 - `9c40442` 后缓存改为 redis store，测试中直接写入缓存的断言已同步改为 `Cache::store('redis')`
