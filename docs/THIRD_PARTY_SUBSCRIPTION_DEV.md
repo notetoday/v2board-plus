@@ -60,6 +60,10 @@ Redis 缓存（parsed_nodes / fetched_at / expires_at）
 - `app/Http/Routes/V1/AdminRoute.php`：新增 6 条路由（fetch/save/update/drop/sync/status）
 - `app/Console/Kernel.php`：注册同步调度
 - `app/Providers/AppServiceProvider.php`：容器绑定 `SubscriptionFetcher`（防止 auto-wiring 使 Guzzle Client 注入导致 SSRF 校验失效）
+- `app/Protocols/Clash.php`：协议覆盖对齐 `ClashMeta`，新增 `vless`/`tuic`/`hysteria`/`hysteria2`/`anytls` 分支与 builder（此前仅输出 ss/vmess/trojan，导致 Clash 订阅漏掉第三方 vless 等节点）
+- `app/Http/Controllers/V1/Client/AppController.php`：App 内置 Clash 配置同样补齐全部协议
+- `app/Protocols/Surge.php` / `Surfboard.php` / `Loon.php`：新增 `tuic`、`hysteria2`（type 兼容 `hysteria+version=2`）分支；并统一 `buildVmess` 对第三方节点（snake_case：`tls_settings`/`network_settings`/`allow_insecure`/`server_name`）与自有节点（camelCase）的字段大小写兼容，此前第三方 vmess 在 Surge/Surfboard/Loon 会丢 TLS/WS 参数
+- `tests/Feature/ProtocolConsistencyTest.php`：跨客户端（Clash/Shadowrocket/Surge/Surfboard/Loon/QuantumultX）协议输出与第三方 vmess 参数透传的回归测试
 
 ## 四、数据库
 
@@ -87,11 +91,12 @@ last_sync_at, last_error, created_at, updated_at
 | `9c40442` | **缓存改 Redis store**：第三方节点缓存从 file cache 切换到 `Cache::store('redis')`，规避 root cron 与 php-fpm(www) 写同一 file cache 的属主冲突 |
 | `44e778c` | **操作列分隔符修复**：第三方订阅管理页操作列误用了 antd Select（`2fM7` 模块）当 Divider，替换为纯文本 `<span>\|</span>` 分隔，消除误渲染的下拉框 |
 | `c50b253` | **完全不去重**：按用户要求移除 sync 与合并阶段的两层去重（`deduplicate`/`deduplicateServers` 及 converter 的 fingerprint/richness 辅助），第三方订阅节点原样保留。已同步更新去重相关测试 |
+| `7e01d03` | **统一各订阅生成器协议覆盖与字段兼容**：Clash/App 补齐 vless/tuic/hysteria/hysteria2/anytls；Surge/Surfboard/Loon 新增 tuic、hysteria2 分支并统一 `buildVmess` 的 snake/camel 大小写兼容（修复第三方 vmess 在 Surge/Surfboard/Loon 丢 TLS/WS 参数）；新增 `ProtocolConsistencyTest` |
 
 ## 六、测试状态
 
-- `vendor/bin/phpunit` 全量通过：**58 tests / 187 assertions**（截至 `c50b253`）
-- 覆盖：Parser（各协议/非法/空/部分损坏/重复）、Fetcher（200/404/500/timeout/redirect/large/invalid content-type）、Aggregator（只有自有/只有第三方/两者混合/多源/部分源失败/缓存存在/缓存过期）、Persistence（第三方节点不落库，`Node::count()` 不变）
+- `vendor/bin/phpunit` 全量通过：**64 tests / 226 assertions**（截至 `7e01d03`）
+- 覆盖：Parser（各协议/非法/空/部分损坏/重复）、Fetcher（200/404/500/timeout/redirect/large/invalid content-type）、Aggregator（只有自有/只有第三方/两者混合/多源/部分源失败/缓存存在/缓存过期）、Persistence（第三方节点不落库，`Node::count()` 不变）、ProtocolConsistency（各客户端协议输出 + 第三方 vmess snake_case 参数透传）
 - `c50b253` 起**不去重**：重复节点、跨源相同节点、仅指纹/传输参数不同的节点全部原样保留（含 3 对同 server:port 不同配置的节点）
 - `9c40442` 后缓存改为 redis store，测试中直接写入缓存的断言已同步改为 `Cache::store('redis')`
 
@@ -111,7 +116,7 @@ last_sync_at, last_error, created_at, updated_at
 ## 八、当前已知问题 / 待办
 
 - **传输层透传**：VLESS/Trojan URI 的 `type` 参数已映射为 `network`（ws/grpc 的 path/host/serviceName 透传完整）。但部分字段 V2Board 生成器本身不支持（如 trojan 的 alpn、部分新传输 xhttp/httpupgrade），未强制透传，属生成器固有限制。
-- **hysteria/anytls** 的字段透传已读码确认架构正常，但未做真实订阅实测。
+- **hysteria/anytls** 的字段透传已读码确认架构正常，`7e01d03` 起协议输出由 `ProtocolConsistencyTest` 覆盖，但仍未做真实订阅实测。
 - 后台管理页前端注入基于 `public/assets/admin/umi.js` 编译产物（见下节），**升级时 `update.sh` 的 `git reset --hard` 会覆盖本地注入**，需重新注入或改为正式构建。
 - **缓存一律走 Redis**：`ThirdPartySubscriptionService` 用 `Cache::store('redis')`。**不要**改回默认 store——生产 `CACHE_DRIVER=file`，而同步调度 cron 以 root 运行会写 file cache 产生 root 属主文件，php-fpm(www) HTTP 请求覆盖失败会 500（后台点同步弹「请求失败」）。
 - **前端注入组件引用易错**：`umi.js` 里 `n("2fM7")` 是 **antd Select 下拉框**，不是 Divider。操作列分隔应使用纯文本 `<span>|</span>`，不要引用 `p["a"]` 之类不确定的模块导出。
