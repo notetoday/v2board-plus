@@ -3,7 +3,6 @@
 namespace App\Protocols;
 
 use App\Utils\Helper;
-use phpDocumentor\Reflection\Types\Self_;
 use Symfony\Component\Yaml\Yaml;
 
 class Clash
@@ -38,27 +37,43 @@ class Clash
         $proxies = [];
 
         foreach ($servers as $item) {
-            if ($item['type'] === 'v2node') {
+            // Singbox-style inline adaptation: unwrap v2node
+            if (($item['type'] ?? null) === 'v2node' && isset($item['protocol'])) {
                 $item['type'] = $item['protocol'];
             }
-            if ($item['type'] === 'shadowsocks'
-                && in_array($item['cipher'], [
-                    'aes-128-gcm',
-                    'aes-192-gcm',
-                    'aes-256-gcm',
-                    'chacha20-ietf-poly1305'
-                ])
-            ) {
-                array_push($proxy, self::buildShadowsocks(Helper::resolveServerCredential($user['uuid'], $item), $item));
-                array_push($proxies, $item['name']);
-            }
-            if ($item['type'] === 'vmess') {
-                array_push($proxy, self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item));
-                array_push($proxies, $item['name']);
-            }
-            if ($item['type'] === 'trojan') {
-                array_push($proxy, self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item));
-                array_push($proxies, $item['name']);
+            switch ($item['type']) {
+                case 'shadowsocks':
+                    $proxy[] = self::buildShadowsocks(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                    $proxies[] = $item['name'];
+                    break;
+                case 'vmess':
+                    $proxy[] = self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                    $proxies[] = $item['name'];
+                    break;
+                case 'vless':
+                    $proxy[] = self::buildVless(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                    $proxies[] = $item['name'];
+                    break;
+                case 'trojan':
+                    $proxy[] = self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                    $proxies[] = $item['name'];
+                    break;
+                case 'tuic':
+                    $proxy[] = self::buildTuic(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                    $proxies[] = $item['name'];
+                    break;
+                case 'anytls':
+                    $proxy[] = self::buildAnyTLS(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                    $proxies[] = $item['name'];
+                    break;
+                case 'hysteria':
+                    $proxy[] = self::buildHysteria(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                    $proxies[] = $item['name'];
+                    break;
+                case 'hysteria2':
+                    $proxy[] = self::buildHysteria2(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                    $proxies[] = $item['name'];
+                    break;
             }
         }
 
@@ -80,7 +95,6 @@ class Clash
             if ($isFilter) continue;
             $config['proxy-groups'][$k]['proxies'] = array_merge($config['proxy-groups'][$k]['proxies'], $proxies);
         }
-
         $config['proxy-groups'] = array_filter($config['proxy-groups'], function($group) {
             return $group['proxies'];
         });
@@ -96,15 +110,25 @@ class Clash
         return $yaml;
     }
 
-    public static function buildShadowsocks($uuid, $server)
+    public static function buildShadowsocks($password, $server)
     {
+        if (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-128-gcm') {
+            $serverKey = Helper::getServerKey($server['created_at'], 16);
+            $userKey = Helper::uuidToBase64($password, 16);
+            $password = "{$serverKey}:{$userKey}";
+        }
+        if (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-256-gcm') {
+            $serverKey = Helper::getServerKey($server['created_at'], 32);
+            $userKey = Helper::uuidToBase64($password, 32);
+            $password = "{$serverKey}:{$userKey}";
+        }
         $array = [];
         $array['name'] = $server['name'];
         $array['type'] = 'ss';
         $array['server'] = $server['host'];
         $array['port'] = $server['port'];
         $array['cipher'] = $server['cipher'];
-        $array['password'] = $uuid;
+        $array['password'] = $password;
         $array['udp'] = true;
         if (isset($server['obfs']) && $server['obfs'] === 'http') {
             $array['plugin'] = 'obfs';
@@ -113,15 +137,23 @@ class Clash
             ];
             if (isset($server['obfs-host'])) {
                 $plugin_opts['host'] = $server['obfs-host'];
+            } else {
+                $plugin_opts['host'] = '';
+            }
+            if (isset($server['obfs-path'])) {
+                $plugin_opts['path'] = $server['obfs-path'];
             }
             $array['plugin-opts'] = $plugin_opts;
-        } elseif ($server['network'] ?? null == 'http') {
+        } else if ((($server['network'] ?? null) === 'http') && isset(($server['network_settings'] ?? [])['Host'])) {
+            // Fallback like Singbox: treat http obfs specified via network_settings
             $array['plugin'] = 'obfs';
+            $networkSettings = $server['network_settings'];
             $plugin_opts = [
-                'mode' => 'http'
+                'mode' => 'http',
+                'host' => ($networkSettings['Host'] ?? ''),
             ];
-            if (isset($server['network_settings']['Host'])) {
-                $plugin_opts['host'] = $server['network_settings']['Host'];
+            if (isset($networkSettings['path'])) {
+                $plugin_opts['path'] = $networkSettings['path'];
             }
             $array['plugin-opts'] = $plugin_opts;
         }
@@ -140,37 +172,162 @@ class Clash
         $array['cipher'] = 'auto';
         $array['udp'] = true;
 
-        if ($server['tls']) {
+        if (!empty($server['tls'])) {
             $array['tls'] = true;
-            $tlsSettings = $server['tls_settings'] ?? $server['tlsSettings'] ?? [];
-            $array['skip-cert-verify'] = ((int)($tlsSettings['allow_insecure'] ?? $tlsSettings['allowInsecure'] ?? 0)) == 1 ? true : false;
-            $array['servername'] = $tlsSettings['server_name'] ?? $tlsSettings['serverName'] ?? '';
-
+            $tlsSettings = $server['tlsSettings'] ?? ($server['tls_settings'] ?? null);
+            if ($tlsSettings) {
+                if (isset($tlsSettings['allowInsecure']) && !empty($tlsSettings['allowInsecure']))
+                    $array['skip-cert-verify'] = ($tlsSettings['allowInsecure'] ? true : false);
+                if (isset($tlsSettings['serverName']) && !empty($tlsSettings['serverName']))
+                    $array['servername'] = $tlsSettings['serverName'];
+                if (!empty($tlsSettings['ech'])) {
+                    if ($tlsSettings['ech'] === 'cloudflare') {
+                        $array['ech-opts'] = [
+                            'enable' => true,
+                            'query-server-name' => 'cloudflare-ech.com'
+                        ];
+                    } elseif ($tlsSettings['ech'] === 'custom' && !empty($tlsSettings['ech_config'])) {
+                        $array['ech-opts'] = [
+                            'enable' => true,
+                            'config' => is_array($tlsSettings['ech_config']) ? $tlsSettings['ech_config'] : [$tlsSettings['ech_config']]
+                        ];
+                    }
+                }
+            }
         }
-        if ($server['network'] === 'tcp') {
-            $tcpSettings = $server['network_settings'] ?? ($server['networkSettings'] ?? []);
+        $network = $server['network'] ?? null;
+        if ($network === 'tcp') {
+            $tcpSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? []);
             if (isset($tcpSettings['header']['type']) && $tcpSettings['header']['type'] == 'http') {
                 $array['network'] = $tcpSettings['header']['type'];
                 if (isset($tcpSettings['header']['request']['headers']['Host'])) $array['http-opts']['headers']['Host'] = $tcpSettings['header']['request']['headers']['Host'];
                 if (isset($tcpSettings['header']['request']['path'])) $array['http-opts']['path'] = $tcpSettings['header']['request']['path'];
             }
         }
+        if ($network === 'ws') {
+            $array['network'] = 'ws';
+            $wsSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? null);
+            if ($wsSettings) {
+                $array['ws-opts'] = [];
+                if (isset($wsSettings['path']) && !empty($wsSettings['path']))
+                    $array['ws-opts']['path'] = $wsSettings['path'];
+                if (isset($wsSettings['headers']['Host']) && !empty($wsSettings['headers']['Host']))
+                    $array['ws-opts']['headers'] = ['Host' => $wsSettings['headers']['Host']];
+                if (isset($wsSettings['security'])) 
+                    $array['cipher'] = $wsSettings['security'];
+            }
+        }
+        if ($network === 'grpc') {
+            $array['network'] = 'grpc';
+            $grpcSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? null);
+            if ($grpcSettings) {
+                $array['grpc-opts'] = [];
+                if (isset($grpcSettings['serviceName'])) $array['grpc-opts']['grpc-service-name'] = $grpcSettings['serviceName'];
+            }
+        }
+
+        return $array;
+    }
+
+    public static function buildVless($uuid, $server)
+    {
+        $array = [];
+        $array['name'] = $server['name'];
+        $array['type'] = 'vless';
+        $array['server'] = $server['host'];
+        $array['port'] = $server['port'];
+        $array['uuid'] = $uuid;
+        $array['udp'] = true;
+
+        if (!empty($server['flow'])) {
+            $array['flow'] = $server['flow'];
+        }
+
+        if ($server['tls']) {
+            $array['tls'] = true;
+            $tlsSettings = $server['tls_settings'] ?? [];
+            $array['skip-cert-verify'] = ($tlsSettings['allow_insecure'] ?? 0) == 1 ? true : false;
+            $array['client-fingerprint'] = !empty($tlsSettings['fingerprint']) ? $tlsSettings['fingerprint'] : 'chrome';
+            if ($tlsSettings) {
+                if (isset($tlsSettings['server_name']) && !empty($tlsSettings['server_name']))
+                   $array['servername'] = $tlsSettings['server_name'];
+                if ($server['tls'] == 2) {
+                   $array['reality-opts'] = [];
+                   $array['reality-opts']['public-key'] = $tlsSettings['public_key'];
+                   $array['reality-opts']['short-id'] = $tlsSettings['short_id'];
+                }
+                if (!empty($tlsSettings['ech'])) {
+                    if ($tlsSettings['ech'] === 'cloudflare') {
+                        $array['ech-opts'] = [
+                            'enable' => true,
+                            'query-server-name' => 'cloudflare-ech.com'
+                        ];
+                    } elseif ($tlsSettings['ech'] === 'custom' && !empty($tlsSettings['ech_config'])) {
+                        $array['ech-opts'] = [
+                            'enable' => true,
+                            'config' => is_array($tlsSettings['ech_config']) ? $tlsSettings['ech_config'] : [$tlsSettings['ech_config']]
+                        ];
+                    }
+                }
+            }
+        }
+
+        if ($server['network'] === 'tcp') {
+            $tcpSettings = $server['network_settings'];
+            if (isset($tcpSettings['header']['type']) && $tcpSettings['header']['type'] == 'http') {
+                $array['network'] = $tcpSettings['header']['type'];
+                if (isset($tcpSettings['header']['request']['headers']['Host'])) $array['http-opts']['headers']['Host'] = $tcpSettings['header']['request']['headers']['Host'];
+                if (isset($tcpSettings['header']['request']['path'])) $array['http-opts']['path'] = $tcpSettings['header']['request']['path'];
+            }
+        }
+
         if ($server['network'] === 'ws') {
             $array['network'] = 'ws';
-            $wsSettings = $server['network_settings'] ?? ($server['networkSettings'] ?? []);
-            $array['ws-opts'] = [];
-            if (isset($wsSettings['path']) && !empty($wsSettings['path']))
-                $array['ws-opts']['path'] = $wsSettings['path'];
-            if (isset($wsSettings['headers']['Host']) && !empty($wsSettings['headers']['Host']))
-                $array['ws-opts']['headers'] = ['Host' => $wsSettings['headers']['Host']];
-            if (isset($wsSettings['security'])) 
-                $array['cipher'] = $wsSettings['security'];
+            if ($server['network_settings']) {
+                $wsSettings = $server['network_settings'];
+                $array['ws-opts'] = [];
+                if (isset($wsSettings['path']) && !empty($wsSettings['path']))
+                    $array['ws-opts']['path'] = $wsSettings['path'];
+                if (isset($wsSettings['headers']['Host']) && !empty($wsSettings['headers']['Host']))
+                    $array['ws-opts']['headers'] = ['Host' => $wsSettings['headers']['Host']];
+            }
         }
         if ($server['network'] === 'grpc') {
             $array['network'] = 'grpc';
-            $grpcSettings = $server['network_settings'] ?? ($server['networkSettings'] ?? []);
-            $array['grpc-opts'] = [];
-            if (isset($grpcSettings['serviceName'])) $array['grpc-opts']['grpc-service-name'] = $grpcSettings['serviceName'];
+            if ($server['network_settings']) {
+                $grpcSettings = $server['network_settings'];
+                $array['grpc-opts'] = [];
+                if (isset($grpcSettings['serviceName'])) $array['grpc-opts']['grpc-service-name'] = $grpcSettings['serviceName'];
+            }
+        }
+        if ($server['network'] === 'xhttp') {
+            $array['network'] = 'xhttp';
+            if ($server['network_settings']) {
+                $xhttpSettings = $server['network_settings'];
+                $array['xhttp-opts'] = [];
+                if (isset($xhttpSettings['path'])) $array['xhttp-opts']['path'] = $xhttpSettings['path'];
+                if (isset($xhttpSettings['host'])) $array['xhttp-opts']['host'] = $xhttpSettings['host'];
+                if (isset($xhttpSettings['mode'])) $array['xhttp-opts']['mode'] = $xhttpSettings['mode'];
+                // 暂不支持extra
+                //if (isset($xhttpSettings['extra'])) {
+                    //$array['xhttp-opts']['headers'] = $xhttpSettings['extra']['headers'] ?? [];
+                    //if (isset($xhttpSettings['extra']['xmux'])) {
+                    //    $array['xhttp-opts']['sc-max-concurrent-posts'] = $xhttpSettings['extra']['xmux']['maxConcurrency'] ?? [];
+                    //}
+
+                //}
+            }
+        }
+
+        if (isset($server['encryption']) && !empty($server['encryption']) && isset($server['encryption_settings']) && !empty($server['encryption_settings'])) {
+            $encryptionSettings = $server['encryption_settings'];
+            $array['encryption'] = $server['encryption'] ?? 'mlkem768x25519plus';
+            $array['encryption'] .= '.' . $encryptionSettings['mode'] ?? 'native';
+            $array['encryption'] .= '.' . $encryptionSettings['rtt'] ?? '1rtt';
+            if (isset($encryptionSettings['client_padding']) && !empty($encryptionSettings['client_padding'])) {
+                $array['encryption'] .= '.' . $encryptionSettings['client_padding'];
+            }
+            $array['encryption'] .= '.' . $encryptionSettings['password'] ?? '';
         }
 
         return $array;
@@ -201,8 +358,143 @@ class Clash
                 }
             }
         };
-        $array['sni'] = $server['server_name'] ?? (($server['tls_settings'] ?? [])['server_name'] ?? '');
-        $array['skip-cert-verify'] = ((int)(($server['tls_settings'] ?? [])['allow_insecure'] ?? ($server['allow_insecure'] ?? 0))) == 1 ? true : false;
+        $tlsSettings = $server['tls_settings'] ?? [];
+        $array['sni'] = $server['server_name'] ?? ($tlsSettings['server_name'] ?? '');
+        $array['skip-cert-verify'] = ($server['allow_insecure'] ?? ($tlsSettings['allow_insecure'] ?? 0)) == 1 ? true : false;
+        if (!empty($tlsSettings['ech'])) {
+            if ($tlsSettings['ech'] === 'cloudflare') {
+                $array['ech-opts'] = [
+                    'enable' => true,
+                    'query-server-name' => 'cloudflare-ech.com'
+                ];
+            } elseif ($tlsSettings['ech'] === 'custom' && !empty($tlsSettings['ech_config'])) {
+                $array['ech-opts'] = [
+                    'enable' => true,
+                    'config' => is_array($tlsSettings['ech_config']) ? $tlsSettings['ech_config'] : [$tlsSettings['ech_config']]
+                ];
+            }
+        }
+        return $array;
+    }
+
+    public static function buildTuic($password, $server)
+    {
+        $array = [
+            'name' => $server['name'],
+            'type' => 'tuic',
+            'server' => $server['host'],
+            'port' => $server['port'],
+            'uuid' => $password,
+            'password' => $password,
+            'alpn' => ['h3'],
+            'disable-sni' => $server['disable_sni'] ? true : false,
+            'reduce-rtt' => $server['zero_rtt_handshake'] ? true : false,
+            'udp-relay-mode' => $server['udp_relay_mode'] ?? 'native',
+            'congestion-controller' => $server['congestion_control'] ?? 'cubic',
+        ];
+        $tlsSettings = $server['tls_settings'] ?? [];
+        $array['skip-cert-verify'] = ($server['insecure'] ?? ($tlsSettings['allow_insecure'] ?? 0)) == 1 ? true : false;
+        $array['sni'] = $server['server_name'] ?? ($tlsSettings['server_name'] ?? '');
+
+        return $array;
+    }
+
+    public static function buildAnyTLS($password, $server)
+    {
+        $array = [
+            'name' => $server['name'],
+            'type' => 'anytls',
+            'server' => $server['host'],
+            'port' => $server['port'],
+            'password' => $password,
+            'client-fingerprint' => 'chrome',
+            'udp' => true,
+            'alpn' => [
+                'h2',
+                'http/1.1',
+            ],
+        ];
+        $tlsSettings = $server['tls_settings'] ?? [];
+        $array['sni'] = $server['server_name'] ?? ($tlsSettings['server_name'] ?? '');
+        $array['skip-cert-verify'] = ($server['insecure'] ?? ($tlsSettings['allow_insecure'] ?? 0)) == 1 ? true : false;
+        return $array;
+    }
+
+    public static function buildHysteria($password, $server)
+    {
+        $array = [];
+        $array['name'] = $server['name'];
+        $array['server'] = $server['host'];
+
+        $parts = explode(",", $server['port']);
+        $firstPart = $parts[0];
+        if (strpos($firstPart, '-') !== false) {
+            $range = explode('-', $firstPart);
+            $firstPort = $range[0];
+        } else {
+            $firstPort = $firstPart;
+        }
+        $array['port'] = (int)$firstPort;
+        if (count($parts) !== 1 || strpos($parts[0], '-') !== false) {
+            $array['ports'] = $server['port'];
+            $array['mport'] = $server['port'];
+        }
+        $array['udp'] = true;
+        $array['skip-cert-verify'] = $server['insecure'] == 1 ? true : false;
+
+        if (isset($server['server_name'])) $array['sni'] = $server['server_name'];
+
+        if ($server['version'] === 2) {
+            $array['type'] = 'hysteria2';
+            $array['password'] = $password;
+            if (isset($server['obfs'])){
+                $array['obfs'] = $server['obfs'];
+                $array['obfs-password'] = $server['obfs_password'];
+            }
+        } else {
+            $array['type'] = 'hysteria';
+            $array['auth_str'] = $password;
+            if (isset($server['obfs']) && isset($server['obfs_password'])){
+                $array['obfs'] = $server['obfs_password'];
+            }
+            //Todo:完善客户端上下行
+            $array['up'] = $server['down_mbps'];
+            $array['down'] = $server['up_mbps'];
+            $array['protocol'] = 'udp';
+        }
+
+        return $array;
+    }
+
+    public static function buildHysteria2($password, $server)
+    {
+        $tlsSettings = $server['tls_settings'] ?? [];
+        $array = [
+            'name' => $server['name'],
+            'type' => 'hysteria2',
+            'server' => $server['host'],
+            'password' => $password,
+            'skip-cert-verify' => ($tlsSettings['allow_insecure'] ?? 0) == 1 ? true : false,
+            'sni' => $tlsSettings['server_name'] ?? '',
+            'udp' => true,
+        ];
+        $parts = explode(",", $server['port']);
+        $firstPart = $parts[0];
+        if (strpos($firstPart, '-') !== false) {
+            $range = explode('-', $firstPart);
+            $firstPort = $range[0];
+        } else {
+            $firstPort = $firstPart;
+        }
+        $array['port'] = (int)$firstPort;
+        if (count($parts) !== 1 || strpos($parts[0], '-') !== false) {
+            $array['ports'] = $server['port'];
+            $array['mport'] = $server['port'];
+        }
+        if (isset($server['obfs'])){
+            $array['obfs'] = $server['obfs'];
+            $array['obfs-password'] = $server['obfs_password'];
+        }
         return $array;
     }
 

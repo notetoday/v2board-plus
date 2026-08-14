@@ -31,24 +31,42 @@ class AppController extends Controller
         $proxies = [];
 
         foreach ($servers as $item) {
-            if ($item['type'] === 'shadowsocks'
-                && in_array($item['cipher'], [
-                    'aes-128-gcm',
-                    'aes-192-gcm',
-                    'aes-256-gcm',
-                    'chacha20-ietf-poly1305'
-                ])
-            ) {
-                array_push($proxy, \App\Protocols\Clash::buildShadowsocks(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
-                array_push($proxies, $item['name']);
+            if (($item['type'] ?? null) === 'v2node' && isset($item['protocol'])) {
+                $item['type'] = $item['protocol'];
             }
-            if ($item['type'] === 'vmess') {
-                array_push($proxy, \App\Protocols\Clash::buildVmess(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
-                array_push($proxies, $item['name']);
-            }
-            if ($item['type'] === 'trojan') {
-                array_push($proxy, \App\Protocols\Clash::buildTrojan(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
-                array_push($proxies, $item['name']);
+            switch ($item['type']) {
+                case 'shadowsocks':
+                    array_push($proxy, \App\Protocols\Clash::buildShadowsocks(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
+                    array_push($proxies, $item['name']);
+                    break;
+                case 'vmess':
+                    array_push($proxy, \App\Protocols\Clash::buildVmess(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
+                    array_push($proxies, $item['name']);
+                    break;
+                case 'vless':
+                    array_push($proxy, \App\Protocols\Clash::buildVless(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
+                    array_push($proxies, $item['name']);
+                    break;
+                case 'trojan':
+                    array_push($proxy, \App\Protocols\Clash::buildTrojan(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
+                    array_push($proxies, $item['name']);
+                    break;
+                case 'tuic':
+                    array_push($proxy, \App\Protocols\Clash::buildTuic(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
+                    array_push($proxies, $item['name']);
+                    break;
+                case 'anytls':
+                    array_push($proxy, \App\Protocols\Clash::buildAnyTLS(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
+                    array_push($proxies, $item['name']);
+                    break;
+                case 'hysteria':
+                    array_push($proxy, \App\Protocols\Clash::buildHysteria(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
+                    array_push($proxies, $item['name']);
+                    break;
+                case 'hysteria2':
+                    array_push($proxy, \App\Protocols\Clash::buildHysteria2(\App\Utils\Helper::resolveServerCredential($user['uuid'], $item), $item));
+                    array_push($proxies, $item['name']);
+                    break;
             }
         }
 

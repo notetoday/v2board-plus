@@ -46,7 +46,12 @@ class Surge
                 $proxies .= self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
                 $proxyGroup .= $item['name'] . ', ';
-            }elseif ($item['type'] === 'hysteria' && $item['version'] === 2) { //surge只支持hysteria2
+            }elseif ($item['type'] === 'tuic') {
+                // [Proxy]
+                $proxies .= self::buildTuic(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                // [Proxy Group]
+                $proxyGroup .= $item['name'] . ', ';
+            }elseif (($item['type'] === 'hysteria' && ($item['version'] ?? 1) === 2) || $item['type'] === 'hysteria2') { //surge只支持hysteria2
                 // [Proxy]
                 $proxies .= self::buildHysteria(Helper::resolveServerCredential($user['uuid'], $item), $item);
                 // [Proxy Group]
@@ -137,18 +142,20 @@ class Surge
 
         if ($server['tls']) {
             array_push($config, 'tls=true');
-            if ($server['tlsSettings']) {
-                $tlsSettings = $server['tlsSettings'];
-                if (isset($tlsSettings['allowInsecure']) && !empty($tlsSettings['allowInsecure']))
-                    array_push($config, 'skip-cert-verify=' . ($tlsSettings['allowInsecure'] ? 'true' : 'false'));
-                if (isset($tlsSettings['serverName']) && !empty($tlsSettings['serverName']))
-                    array_push($config, "sni={$tlsSettings['serverName']}");
+            $tlsSettings = $server['tlsSettings'] ?? ($server['tls_settings'] ?? []);
+            if ($tlsSettings) {
+                $allowInsecure = $tlsSettings['allowInsecure'] ?? ($tlsSettings['allow_insecure'] ?? 0);
+                $serverName = $tlsSettings['serverName'] ?? ($tlsSettings['server_name'] ?? '');
+                if (!empty($allowInsecure))
+                    array_push($config, 'skip-cert-verify=' . ($allowInsecure ? 'true' : 'false'));
+                if (!empty($serverName))
+                    array_push($config, "sni={$serverName}");
             }
         }
         if ($server['network'] === 'ws') {
             array_push($config, 'ws=true');
-            if ($server['networkSettings']) {
-                $wsSettings = $server['networkSettings'];
+            $wsSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? []);
+            if ($wsSettings) {
                 if (isset($wsSettings['path']) && !empty($wsSettings['path']))
                     array_push($config, "ws-path={$wsSettings['path']}");
                 if (isset($wsSettings['headers']['Host']) && !empty($wsSettings['headers']['Host']))
@@ -188,6 +195,29 @@ class Surge
             }
         }
         $config = array_filter($config);
+        $uri = implode(',', $config);
+        $uri .= "\r\n";
+        return $uri;
+    }
+
+    public static function buildTuic($password, $server)
+    {
+        $config = [
+            "{$server['name']}=tuic",
+            "{$server['host']}",
+            "{$server['port']}",
+            "token={$password}",
+            "alpn=h3",
+            'udp-relay=true'
+        ];
+        $tlsSettings = $server['tls_settings'] ?? [];
+        $sni = $server['server_name'] ?? ($tlsSettings['server_name'] ?? '');
+        if ($sni) {
+            $config[] = "sni={$sni}";
+        }
+        $insecure = $server['insecure'] ?? ($tlsSettings['allow_insecure'] ?? 0);
+        $config[] = 'skip-cert-verify=' . ($insecure ? 'true' : 'false');
+
         $uri = implode(',', $config);
         $uri .= "\r\n";
         return $uri;
