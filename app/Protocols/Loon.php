@@ -32,7 +32,7 @@ class Loon
                 $uri .= self::buildShadowsocks(Helper::resolveServerCredential($user['uuid'], $item), $item);
             }elseif ($item['type'] === 'vmess') {
                 $uri .= self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item);
-            }elseif ($item['type'] === 'vless' && (($item['network'] ?? null) === 'tcp' || ($item['network'] ?? null) === 'ws')) {
+            }elseif ($item['type'] === 'vless' && (($item['network'] ?? null) === 'tcp' || ($item['network'] ?? null) === 'ws' || ($item['network'] ?? null) === 'http' || ($item['network'] ?? null) === 'h2')) {
                 $uri .= self::buildVless(Helper::resolveServerCredential($user['uuid'], $item), $item);
             }elseif ($item['type'] === 'trojan' && (($item['network'] ?? null) !== 'grpc')) {
                 $uri .= self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item);
@@ -192,6 +192,16 @@ class Loon
                     array_push($config, "path={$wsSettings['path']}");
                 if (isset($wsSettings['headers']['Host']) && !empty($wsSettings['headers']['Host']))
                     array_push($config, "host={$wsSettings['headers']['Host']}");
+            }
+        }
+        if ($server['network'] === 'http' || $server['network'] === 'h2') {
+            array_push($config, 'transport=http');
+            if ($server['network_settings']) {
+                $httpSettings = $server['network_settings'];
+                if (isset($httpSettings['path']) && !empty($httpSettings['path']))
+                    array_push($config, "path={$httpSettings['path']}");
+                if (isset($httpSettings['headers']['Host']) && !empty($httpSettings['headers']['Host']))
+                    array_push($config, "host={$httpSettings['headers']['Host']}");
             }
         }
 

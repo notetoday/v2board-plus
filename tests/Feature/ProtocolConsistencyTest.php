@@ -6,6 +6,7 @@ use App\Protocols\Clash;
 use App\Protocols\Loon;
 use App\Protocols\QuantumultX;
 use App\Protocols\Shadowrocket;
+use App\Protocols\Stash;
 use App\Protocols\Surfboard;
 use App\Protocols\Surge;
 use Tests\TestCase;
@@ -48,6 +49,9 @@ class ProtocolConsistencyTest extends TestCase
             ['type' => 'shadowsocks', 'name' => 'SS-1', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => 'aes-256-gcm', 'obfs' => '', 'created_at' => time(), 'network' => 'tcp', 'network_settings' => [], 'sub_uuid' => 'ss-pass'],
             ['type' => 'vmess', 'name' => 'VM-1', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 1, 'tls_settings' => ['server_name' => 'vm.example.com', 'allow_insecure' => 0], 'network_settings' => ['path' => '/vm', 'headers' => ['Host' => 'vm.example.com']], 'sub_uuid' => 'vm-pass'],
             ['type' => 'vless', 'name' => 'VL-1', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0, 'public_key' => '', 'short_id' => '', 'ech' => '', 'ech_config' => ''], 'network_settings' => ['path' => '/x', 'headers' => ['Host' => 'vl.example.com']], 'sub_uuid' => 'vl-pass'],
+            ['type' => 'vless', 'name' => 'VL-GRPC', 'host' => 'vlgrpc.example.com', 'port' => 443, 'network' => 'grpc', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vlgrpc.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => ['serviceName' => 'grpc-svc'], 'sub_uuid' => 'vlgrpc-pass'],
+            ['type' => 'vless', 'name' => 'VL-XHTTP', 'host' => 'vlxhttp.example.com', 'port' => 443, 'network' => 'xhttp', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vlxhttp.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => ['path' => '/xhttp', 'host' => 'xhttp.example.com', 'mode' => 'auto'], 'sub_uuid' => 'vlxhttp-pass'],
+            ['type' => 'vless', 'name' => 'VL-H2', 'host' => 'vlh2.example.com', 'port' => 443, 'network' => 'h2', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vlh2.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => ['path' => '/h2', 'headers' => ['Host' => 'h2.example.com']], 'sub_uuid' => 'vlh2-pass'],
             ['type' => 'trojan', 'name' => 'TJ-1', 'host' => 'tj.example.com', 'port' => 443, 'network' => 'tcp', 'server_name' => 'tj.example.com', 'allow_insecure' => 0, 'tls_settings' => ['server_name' => 'tj.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'tj-pass'],
             ['type' => 'tuic', 'name' => 'TUIC-1', 'host' => 'tuic.example.com', 'port' => 8443, 'disable_sni' => 0, 'zero_rtt_handshake' => 0, 'udp_relay_mode' => 'native', 'congestion_control' => 'cubic', 'insecure' => 0, 'server_name' => 'tuic.example.com', 'tls_settings' => ['server_name' => 'tuic.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'tuic-pass'],
             ['type' => 'hysteria', 'name' => 'HY-1', 'host' => 'hy.example.com', 'port' => '443', 'version' => 1, 'insecure' => 0, 'server_name' => 'hy.example.com', 'up_mbps' => '50', 'down_mbps' => '100', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy-pass'],
@@ -119,6 +123,26 @@ class ProtocolConsistencyTest extends TestCase
         $this->assertStringContainsString('VL-1=vless', $out);
         $this->assertStringContainsString('tls-name=vm.example.com', $out);
         $this->assertStringContainsString('path=/vm', $out);
+        $this->assertStringContainsString('VL-H2=vless', $out);
+        $this->assertStringContainsString('transport=http', $out);
+        $this->assertStringContainsString('path=/h2', $out);
+        $this->assertStringContainsString('host=h2.example.com', $out);
+        $this->assertStringNotContainsString('VL-XHTTP', $out, 'Loon does not support vless xhttp');
+        $this->assertStringNotContainsString('VL-GRPC', $out, 'Loon does not support vless grpc');
+    }
+
+    public function testStashIncludesXhttpVless()
+    {
+        $user = $this->makeUser();
+        $servers = $this->makeServers();
+        $out = (new Stash($user, $servers))->handle();
+
+        $this->assertStringContainsString('VL-XHTTP', $out);
+        $this->assertStringContainsString('network: xhttp', $out);
+        $this->assertStringContainsString('xhttp-opts:', $out);
+        $this->assertStringContainsString('path: /xhttp', $out);
+        $this->assertStringContainsString('host: xhttp.example.com', $out);
+        $this->assertStringContainsString('mode: auto', $out);
     }
 
     public function testQuantumultXIncludesVlessAndAnyTls()

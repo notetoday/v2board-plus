@@ -151,18 +151,20 @@ class Stash
         $array['cipher'] = 'auto';
         $array['udp'] = true;
 
-        if ($server['tls']) {
+        if (!empty($server['tls'])) {
             $array['tls'] = true;
-            if ($server['tlsSettings']) {
-                $tlsSettings = $server['tlsSettings'];
-                if (isset($tlsSettings['allowInsecure']) && !empty($tlsSettings['allowInsecure']))
-                    $array['skip-cert-verify'] = ($tlsSettings['allowInsecure'] ? true : false);
-                if (isset($tlsSettings['serverName']) && !empty($tlsSettings['serverName']))
-                    $array['servername'] = $tlsSettings['serverName'];
+            $tlsSettings = $server['tlsSettings'] ?? ($server['tls_settings'] ?? null);
+            if ($tlsSettings) {
+                $allowInsecure = $tlsSettings['allowInsecure'] ?? ($tlsSettings['allow_insecure'] ?? 0);
+                if (!empty($allowInsecure))
+                    $array['skip-cert-verify'] = ($allowInsecure ? true : false);
+                $serverName = $tlsSettings['serverName'] ?? ($tlsSettings['server_name'] ?? '');
+                if (!empty($serverName))
+                    $array['servername'] = $serverName;
             }
         }
         if ($server['network'] === 'tcp') {
-            $tcpSettings = $server['networkSettings'];
+            $tcpSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? []);
             if (isset($tcpSettings['header']['type']) && $tcpSettings['header']['type'] == 'http') {
                 $array['network'] = $tcpSettings['header']['type'];
                 if (isset($tcpSettings['header']['request']['headers']['Host'])) $array['http-opts']['headers']['Host'] = $tcpSettings['header']['request']['headers']['Host'];
@@ -170,8 +172,8 @@ class Stash
         }
         if ($server['network'] === 'ws') {
             $array['network'] = 'ws';
-            if ($server['networkSettings']) {
-                $wsSettings = $server['networkSettings'];
+            $wsSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? null);
+            if ($wsSettings) {
                 $array['ws-opts'] = [];
                 if (isset($wsSettings['path']) && !empty($wsSettings['path']))
                     $array['ws-opts']['path'] = $wsSettings['path'];
@@ -188,8 +190,8 @@ class Stash
         }
         if ($server['network'] === 'grpc') {
             $array['network'] = 'grpc';
-            if ($server['networkSettings']) {
-                $grpcSettings = $server['networkSettings'];
+            $grpcSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? null);
+            if ($grpcSettings) {
                 $array['grpc-opts'] = [];
                 if (isset($grpcSettings['serviceName']))  $array['grpc-opts']['grpc-service-name'] = $grpcSettings['serviceName'];
             }
@@ -255,6 +257,16 @@ class Stash
                 $grpcSettings = $server['network_settings'];
                 $array['grpc-opts'] = [];
                 if (isset($grpcSettings['serviceName'])) $array['grpc-opts']['grpc-service-name'] = $grpcSettings['serviceName'];
+            }
+        }
+        if ($server['network'] === 'xhttp') {
+            $array['network'] = 'xhttp';
+            if ($server['network_settings']) {
+                $xhttpSettings = $server['network_settings'];
+                $array['xhttp-opts'] = [];
+                if (isset($xhttpSettings['path'])) $array['xhttp-opts']['path'] = $xhttpSettings['path'];
+                if (isset($xhttpSettings['host'])) $array['xhttp-opts']['host'] = $xhttpSettings['host'];
+                if (isset($xhttpSettings['mode'])) $array['xhttp-opts']['mode'] = $xhttpSettings['mode'];
             }
         }
 
@@ -402,7 +414,7 @@ class Stash
             'port' => $server['port'],
             'password' => $password,
         ];
-        if ($server['tls']) {
+        if (!empty($server['tls'])) {
             $array['tls'] = true;
             $tlsSettings = $server['tls_settings'] ?? [];
             $array['client-fingerprint'] = !empty($tlsSettings['fingerprint']) ? $tlsSettings['fingerprint'] : 'chrome';
