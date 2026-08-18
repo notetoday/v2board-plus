@@ -61,4 +61,20 @@ class TemporaryNodeConverterTest extends TestCase
         $array = (new TemporaryNodeConverter())->convert($node, 1);
         $this->assertSame(443, $array['port']);
     }
+
+    public function testTrojanWebsocketObfsMapsNetworkSettings()
+    {
+        $node = new TemporaryNode('trojan', 'TJ', '104.26.15.137', 443, [
+            'credential' => 'humanity',
+            'network' => 'ws',
+            'sni' => 'www.ignitelimit.com',
+            'path' => '/assignment',
+            'host' => 'www.ignitelimit.com',
+        ]);
+        $array = (new TemporaryNodeConverter())->convert($node, 1);
+        $this->assertSame('ws', $array['network']);
+        $this->assertSame('www.ignitelimit.com', $array['server_name']);
+        $this->assertSame('/assignment', $array['network_settings']['path']);
+        $this->assertSame('www.ignitelimit.com', $array['network_settings']['headers']['Host']);
+    }
 }

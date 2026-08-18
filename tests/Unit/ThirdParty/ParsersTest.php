@@ -85,6 +85,17 @@ class ParsersTest extends TestCase
         $this->assertSame('test', $node->settings['serviceName']);
     }
 
+    public function testParseTrojanGoWebsocketObfs()
+    {
+        $node = TrojanParser::parse('trojan://humanity@104.26.15.137:443?peer=www.ignitelimit.com&plugin=obfs-local;obfs%3Dwebsocket;obfs-host%3D;obfs-uri%3D/assignment#Node');
+        $this->assertNotNull($node);
+        $this->assertSame('trojan', $node->type);
+        $this->assertSame('www.ignitelimit.com', $node->settings['sni']);
+        $this->assertSame('ws', $node->settings['network']);
+        $this->assertSame('/assignment', $node->settings['path']);
+        $this->assertSame('www.ignitelimit.com', $node->settings['host']);
+    }
+
     public function testParseShadowsocksUri()
     {
         $userPass = base64_encode('aes-256-gcm:ss-password');
