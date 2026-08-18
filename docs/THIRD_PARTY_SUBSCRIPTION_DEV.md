@@ -94,6 +94,7 @@ last_sync_at, last_error, created_at, updated_at
 | `44e778c` | **操作列分隔符修复**：第三方订阅管理页操作列误用了 antd Select（`2fM7` 模块）当 Divider，替换为纯文本 `<span>\|</span>` 分隔，消除误渲染的下拉框 |
 | `c50b253` | **完全不去重**：按用户要求移除 sync 与合并阶段的两层去重（`deduplicate`/`deduplicateServers` 及 converter 的 fingerprint/richness 辅助），第三方订阅节点原样保留。已同步更新去重相关测试 |
 | `7e01d03` | **统一各订阅生成器协议覆盖与字段兼容**：Clash/App 补齐 vless/tuic/hysteria/hysteria2/anytls；Surge/Surfboard/Loon 新增 tuic、hysteria2 分支并统一 `buildVmess` 的 snake/camel 大小写兼容（修复第三方 vmess 在 Surge/Surfboard/Loon 丢 TLS/WS 参数）；新增 `ProtocolConsistencyTest` |
+| `78b47de` | **hysteria2 obfs-password + hysteria up/down + mport 字段映射修复**：`Hysteria2Parser` 归一化 URI 查询键 `obfs-password`→`obfs_password`、`mport`→`ports`（`parse_str` 保留连字符键，下游只读下划线键导致丢参）；全部 hysteria2 生成器（Clash/Stash/ClashMeta/ClashVerge/ClashNyanpasu/Singbox/SingboxOld/Loon）改为仅当 `obfs` 与 `obfs_password` 均非空时才输出，修复 `proxy 20: hysteria2 obfs: salamander requires obfs-password` 客户端报错；`TemporaryNodeConverter` 补充读取 `up_mbps`/`down_mbps`（Clash YAML hysteria 带宽不再丢失）并把 `ports`/`mport` 折叠进 `port`（此前 `mport` 为死代码，无生成器读取）；新增 parser/converter/Clash 回归测试 |
 
 ## 六、测试状态
 
@@ -101,6 +102,7 @@ last_sync_at, last_error, created_at, updated_at
 - 覆盖：Parser（各协议/非法/空/部分损坏/重复）、Fetcher（200/404/500/timeout/redirect/large/invalid content-type）、Aggregator（只有自有/只有第三方/两者混合/多源/部分源失败/缓存存在/缓存过期）、Persistence（第三方节点不落库，`Node::count()` 不变）、ProtocolConsistency（各客户端协议输出 + 第三方 vmess snake_case 参数透传）
 - `c50b253` 起**不去重**：重复节点、跨源相同节点、仅指纹/传输参数不同的节点全部原样保留（含 3 对同 server:port 不同配置的节点）
 - `9c40442` 后缓存改为 redis store，测试中直接写入缓存的断言已同步改为 `Cache::store('redis')`
+- `78b47de` 新增 10 个测试：Hysteria2 parser（obfs-password 归一化、mport 归一化）、Clash YAML hysteria（up/down→up_mbps/down_mbps、ports）、`TemporaryNodeConverterTest`（5 用例：up/down 映射、ports/mport 折叠、无 ports 保持原端口）、Clash hysteria2 obfs（缺密码省略 / 有密码输出）。全量 phpunit 总数待本地 `vendor/bin/phpunit` 复跑确认（此前 65 tests / 238 assertions，本轮 +10 tests）
 
 ## 七、真实订阅验证（本地测试环境）
 
@@ -117,7 +119,7 @@ last_sync_at, last_error, created_at, updated_at
 
 ## 八、当前已知问题 / 待办
 
-- **传输层透传**：VLESS/Trojan URI 的 `type` 参数已映射为 `network`（ws/grpc 的 path/host/serviceName 透传完整）。但部分字段 V2Board 生成器本身不支持（如 trojan 的 alpn、部分新传输 xhttp/httpupgrade），未强制透传，属生成器固有限制。
+- **传输层透传**：VLESS/Trojan URI 的 `type` 参数已映射为 `network`（ws/grpc 的 path/host/serviceName 透传完整）。但部分字段 V2Board 生成器本身不支持（如 trojan 的 alpn/peer、VLESS reality 的 `spx` spiderX——全库无 spiderX 字段与输出），未强制透传，属生成器固有限制；这些是可选特性，不影响节点连通。hysteria2 的 `mport` 端口跳跃已通过折叠进 `port` 字符串透传（`78b47de`）。
 - **hysteria/anytls** 的字段透传已读码确认架构正常，`7e01d03` 起协议输出由 `ProtocolConsistencyTest` 覆盖，但仍未做真实订阅实测。
 - 后台管理页前端注入基于 `public/assets/admin/umi.js` 编译产物（见下节），**升级时 `update.sh` 的 `git reset --hard` 会覆盖本地注入**，需重新注入或改为正式构建。
 - **缓存一律走 Redis**：`ThirdPartySubscriptionService` 用 `Cache::store('redis')`。**不要**改回默认 store——生产 `CACHE_DRIVER=file`，而同步调度 cron 以 root 运行会写 file cache 产生 root 属主文件，php-fpm(www) HTTP 请求覆盖失败会 500（后台点同步弹「请求失败」）。
