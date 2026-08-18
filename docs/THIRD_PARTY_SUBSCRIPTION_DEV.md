@@ -96,6 +96,7 @@ last_sync_at, last_error, created_at, updated_at
 | `7e01d03` | **统一各订阅生成器协议覆盖与字段兼容**：Clash/App 补齐 vless/tuic/hysteria/hysteria2/anytls；Surge/Surfboard/Loon 新增 tuic、hysteria2 分支并统一 `buildVmess` 的 snake/camel 大小写兼容（修复第三方 vmess 在 Surge/Surfboard/Loon 丢 TLS/WS 参数）；新增 `ProtocolConsistencyTest` |
 | `78b47de` | **hysteria2 obfs-password + hysteria up/down + mport 字段映射修复**：`Hysteria2Parser` 归一化 URI 查询键 `obfs-password`→`obfs_password`、`mport`→`ports`（`parse_str` 保留连字符键，下游只读下划线键导致丢参）；全部 hysteria2 生成器（Clash/Stash/ClashMeta/ClashVerge/ClashNyanpasu/Singbox/SingboxOld/Loon）改为仅当 `obfs` 与 `obfs_password` 均非空时才输出，修复 `proxy 20: hysteria2 obfs: salamander requires obfs-password` 客户端报错；`TemporaryNodeConverter` 补充读取 `up_mbps`/`down_mbps`（Clash YAML hysteria 带宽不再丢失）并把 `ports`/`mport` 折叠进 `port`（此前 `mport` 为死代码，无生成器读取）；新增 parser/converter/Clash 回归测试 |
 | `6a3ea6e` | **trojan-go 节点解析修复**：`TrojanParser` 映射 `peer`→`sni`（trojan-go 用 `peer` 表达 TLS SNI），并解析 `plugin=obfs-local;obfs=websocket;obfs-host=..;obfs-uri=..` 为 `network=ws` + `path` + `host`。此前此类节点（如 `trojan://humanity@104.26.15.137:443?peer=...&plugin=obfs-local;obfs=websocket;...`）在 Clash 输出为纯 tcp 且丢失 SNI，导致无法连通（Shadowrocket 因客户端原生解析 URI 不受影响）。新增 parser/converter 回归测试 |
+| `(next)` | **Clash 家族 vmess TLS 字段大小写修复 + insecure 键名归一化**：`Clash.php`/`ClashMeta.php`/`ClashNyanpasu.php`/`ClashVerge.php` 的 `buildVmess` 此前只读 `tlsSettings['serverName']`/`['allowInsecure']`（camelCase），而 converter/DB server 数组用 snake_case `server_name`/`allow_insecure`，导致第三方 vmess 的 TLS SNI 与 skip-cert-verify 静默丢失。改为同时兼容两种键名。`TemporaryNodeConverter` 新增 `allowInsecure()` 归一化辅助，统一读取 `insecure`/`allow_insecure`/`allowInsecure` 三种来源键（此前 vless/tuic/anytls 读 `insecure`、vmess/trojan 读 `allowInsecure`，URI 源用 `allow_insecure` 或 `allowInsecure` 时被静默丢弃）。新增 converter 与 Clash 回归测试 |
 
 ## 六、测试状态
 
@@ -104,6 +105,7 @@ last_sync_at, last_error, created_at, updated_at
 - `c50b253` 起**不去重**：重复节点、跨源相同节点、仅指纹/传输参数不同的节点全部原样保留（含 3 对同 server:port 不同配置的节点）
 - `9c40442` 后缓存改为 redis store，测试中直接写入缓存的断言已同步改为 `Cache::store('redis')`
 - `78b47de` 新增 10 个测试：Hysteria2 parser（obfs-password 归一化、mport 归一化）、Clash YAML hysteria（up/down→up_mbps/down_mbps、ports）、`TemporaryNodeConverterTest`（5 用例：up/down 映射、ports/mport 折叠、无 ports 保持原端口）、Clash hysteria2 obfs（缺密码省略 / 有密码输出）。全量 phpunit 总数待本地 `vendor/bin/phpunit` 复跑确认（此前 65 tests / 238 assertions，本轮 +10 tests）
+- `(next)` 新增测试：`TemporaryNodeConverterTest` 增 3 用例（vmess `allowInsecure`→`allow_insecure`、vless `allow_insecure` 归一化、tuic `allow_insecure`→`insecure`+`tls_settings.allow_insecure`）；`ProtocolConsistencyTest` 增 2 用例（Clash vmess 从 snake_case `tls_settings` 输出 `servername`、`allow_insecure=1` 输出 `skip-cert-verify: true`）
 
 ## 七、真实订阅验证（本地测试环境）
 
