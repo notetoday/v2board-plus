@@ -341,7 +341,7 @@ class SingboxOld
             $array['tag'] = $server['name'];
             $array['type'] = 'hysteria2';
 
-            if (isset($server['obfs'])) {
+            if (!empty($server['obfs']) && !empty($server['obfs_password'])) {
                 $array['obfs']['type'] = $server['obfs'];
                 $array['obfs']['password'] = $server['obfs_password'];
             }
@@ -373,7 +373,7 @@ class SingboxOld
             'tag' => $server['name'],
             'type' => 'hysteria2'
         ];
-        if (isset($server['obfs'])) {
+        if (!empty($server['obfs']) && !empty($server['obfs_password'])) {
             $array['obfs']['type'] = $server['obfs'];
             $array['obfs']['password'] = $server['obfs_password'];
         }

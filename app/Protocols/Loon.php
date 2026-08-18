@@ -264,7 +264,7 @@ class Loon
         if (!empty($server['insecure'])) {
             array_push($config, $server['insecure'] ? 'skip-cert-verify=true' : 'skip-cert-verify=false');
         }
-        if (isset($server['obfs'])){
+        if (!empty($server['obfs']) && !empty($server['obfs_password'])){
             array_push($config, 'salamander-password=' . $server['obfs_password']);
         }
         $config = array_filter($config);

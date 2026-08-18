@@ -154,4 +154,24 @@ class ProtocolConsistencyTest extends TestCase
         $this->assertStringContainsString('VL-1', $out);
         $this->assertStringContainsString('ANY-1', $out);
     }
+
+    public function testClashHysteria2WithoutObfsPasswordOmitsObfs()
+    {
+        $user = $this->makeUser();
+        $servers = $this->makeServers();
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringNotContainsString('obfs-password:', $out);
+    }
+
+    public function testClashHysteria2WithObfsEmitsPassword()
+    {
+        $user = $this->makeUser();
+        $servers = $this->makeServers();
+        $servers[] = ['type' => 'hysteria2', 'name' => 'HY2-OBFS', 'host' => 'hy2obfs.example.com', 'port' => '443', 'tls_settings' => ['server_name' => 'hy2obfs.example.com', 'allow_insecure' => 0], 'insecure' => 0, 'server_name' => 'hy2obfs.example.com', 'obfs' => 'salamander', 'obfs_password' => 'obfs-secret', 'sub_uuid' => 'hy2-obfs-pass'];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringContainsString('obfs: salamander', $out);
+        $this->assertStringContainsString("obfs-password: obfs-secret", $out);
+    }
 }

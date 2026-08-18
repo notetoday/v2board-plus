@@ -119,6 +119,21 @@ class ParsersTest extends TestCase
         $this->assertSame('hy2.example.com', $node->settings['sni']);
     }
 
+    public function testParseHysteria2UriWithObfsPassword()
+    {
+        $node = Hysteria2Parser::parse('hysteria2://hy2-pass@hy2.example.com:8443/?insecure=1&sni=hy2.example.com&obfs=salamander&obfs-password=obfs-secret#Hy2Node');
+        $this->assertNotNull($node);
+        $this->assertSame('salamander', $node->settings['obfs']);
+        $this->assertSame('obfs-secret', $node->settings['obfs_password']);
+    }
+
+    public function testParseHysteria2UriWithMport()
+    {
+        $node = Hysteria2Parser::parse('hysteria2://hy2-pass@hy2.example.com:8443/?insecure=1&sni=hy2.example.com&mport=20000-50000#Hy2Node');
+        $this->assertNotNull($node);
+        $this->assertSame('20000-50000', $node->settings['ports']);
+    }
+
     public function testParseTuicUri()
     {
         $node = TuicParser::parse('tuic://tuic-uuid:tuic-pass@tuic.example.com:7788?sni=tuic.example.com&congestion_control=bbr#TuicNode');
@@ -210,6 +225,34 @@ YAML;
         $this->assertSame('troj-pw', $nodes[1]->settings['credential']);
         $this->assertSame('shadowsocks', $nodes[2]->type);
         $this->assertSame('ss-pw', $nodes[2]->settings['credential']);
+    }
+
+    public function testParseClashYamlHysteria()
+    {
+        $yaml = <<<YAML
+proxies:
+  - name: "CLASH-HY"
+    type: hysteria
+    server: hy.example.com
+    port: 443
+    auth-str: hy-auth
+    up: 50
+    down: 100
+  - name: "CLASH-HY2"
+    type: hysteria2
+    server: hy2.example.com
+    port: 443
+    password: hy2-pass
+    ports: 20000-50000
+YAML;
+        $parser = new ClashYamlParser();
+        $nodes = $parser->parse($yaml);
+        $this->assertCount(2, $nodes);
+        $this->assertSame('hysteria', $nodes[0]->type);
+        $this->assertSame('50', $nodes[0]->settings['up_mbps']);
+        $this->assertSame('100', $nodes[0]->settings['down_mbps']);
+        $this->assertSame('hysteria2', $nodes[1]->type);
+        $this->assertSame('20000-50000', $nodes[1]->settings['ports']);
     }
 
     public function testParserManagerIgnoresInvalidContent()

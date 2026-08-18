@@ -26,6 +26,12 @@ class Hysteria2Parser extends AbstractUriParser
             parse_str($parts['query'], $settings);
         }
         $settings['credential'] = $password;
+        if (isset($settings['obfs-password']) && !isset($settings['obfs_password'])) {
+            $settings['obfs_password'] = $settings['obfs-password'];
+        }
+        if (isset($settings['mport']) && !isset($settings['ports'])) {
+            $settings['ports'] = $settings['mport'];
+        }
         $name = self::parseName($parts['fragment'] ?? '', $parts['host']);
         return new TemporaryNode('hysteria2', $name, $parts['host'], (int)$parts['port'], $settings, []);
     }

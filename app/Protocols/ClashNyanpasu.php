@@ -453,7 +453,7 @@ class ClashNyanpasu
         if ($server['version'] === 2) {
             $array['type'] = 'hysteria2';
             $array['password'] = $password;
-            if (isset($server['obfs'])){
+            if (!empty($server['obfs']) && !empty($server['obfs_password'])){
                 $array['obfs'] = $server['obfs'];
                 $array['obfs-password'] = $server['obfs_password'];
             }
@@ -497,7 +497,7 @@ class ClashNyanpasu
             $array['ports'] = $server['port'];
             $array['mport'] = $server['port'];
         }
-        if (isset($server['obfs'])){
+        if (!empty($server['obfs']) && !empty($server['obfs_password'])){
             $array['obfs'] = $server['obfs'];
             $array['obfs-password'] = $server['obfs_password'];
         }

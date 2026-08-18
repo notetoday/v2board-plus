@@ -134,12 +134,13 @@ class TemporaryNodeConverter
         $array['version'] = $version;
         $array['insecure'] = (int)($settings['insecure'] ?? 0);
         $array['server_name'] = (string)($settings['peer'] ?? ($settings['sni'] ?? ''));
-        $array['up_mbps'] = (string)($settings['upmbps'] ?? ($settings['up'] ?? ''));
-        $array['down_mbps'] = (string)($settings['downmbps'] ?? ($settings['down'] ?? ''));
+        $array['up_mbps'] = (string)($settings['upmbps'] ?? ($settings['up_mbps'] ?? ($settings['up'] ?? '')));
+        $array['down_mbps'] = (string)($settings['downmbps'] ?? ($settings['down_mbps'] ?? ($settings['down'] ?? '')));
         $array['obfs'] = (string)($settings['obfs'] ?? '');
         $array['obfs_password'] = (string)($settings['obfsParam'] ?? ($settings['obfs_password'] ?? ''));
-        if (isset($settings['ports']) && $settings['ports'] !== '') {
-            $array['mport'] = (string)$settings['ports'];
+        $portsRange = (string)($settings['ports'] ?? ($settings['mport'] ?? ''));
+        if ($portsRange !== '') {
+            $array['port'] = (string)$array['port'] . ',' . $portsRange;
         }
         $array['tls_settings'] = [
             'server_name' => (string)($settings['peer'] ?? ($settings['sni'] ?? '')),
