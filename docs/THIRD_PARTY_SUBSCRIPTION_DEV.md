@@ -95,6 +95,7 @@ last_sync_at, last_error, created_at, updated_at
 | `c50b253` | **完全不去重**：按用户要求移除 sync 与合并阶段的两层去重（`deduplicate`/`deduplicateServers` 及 converter 的 fingerprint/richness 辅助），第三方订阅节点原样保留。已同步更新去重相关测试 |
 | `7e01d03` | **统一各订阅生成器协议覆盖与字段兼容**：Clash/App 补齐 vless/tuic/hysteria/hysteria2/anytls；Surge/Surfboard/Loon 新增 tuic、hysteria2 分支并统一 `buildVmess` 的 snake/camel 大小写兼容（修复第三方 vmess 在 Surge/Surfboard/Loon 丢 TLS/WS 参数）；新增 `ProtocolConsistencyTest` |
 | `78b47de` | **hysteria2 obfs-password + hysteria up/down + mport 字段映射修复**：`Hysteria2Parser` 归一化 URI 查询键 `obfs-password`→`obfs_password`、`mport`→`ports`（`parse_str` 保留连字符键，下游只读下划线键导致丢参）；全部 hysteria2 生成器（Clash/Stash/ClashMeta/ClashVerge/ClashNyanpasu/Singbox/SingboxOld/Loon）改为仅当 `obfs` 与 `obfs_password` 均非空时才输出，修复 `proxy 20: hysteria2 obfs: salamander requires obfs-password` 客户端报错；`TemporaryNodeConverter` 补充读取 `up_mbps`/`down_mbps`（Clash YAML hysteria 带宽不再丢失）并把 `ports`/`mport` 折叠进 `port`（此前 `mport` 为死代码，无生成器读取）；新增 parser/converter/Clash 回归测试 |
+| `6a3ea6e` | **trojan-go 节点解析修复**：`TrojanParser` 映射 `peer`→`sni`（trojan-go 用 `peer` 表达 TLS SNI），并解析 `plugin=obfs-local;obfs=websocket;obfs-host=..;obfs-uri=..` 为 `network=ws` + `path` + `host`。此前此类节点（如 `trojan://humanity@104.26.15.137:443?peer=...&plugin=obfs-local;obfs=websocket;...`）在 Clash 输出为纯 tcp 且丢失 SNI，导致无法连通（Shadowrocket 因客户端原生解析 URI 不受影响）。新增 parser/converter 回归测试 |
 
 ## 六、测试状态
 
