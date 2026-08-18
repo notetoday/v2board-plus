@@ -62,6 +62,43 @@ class TemporaryNodeConverterTest extends TestCase
         $this->assertSame(443, $array['port']);
     }
 
+    public function testVmessAllowInsecureNormalizedToSnakeCase()
+    {
+        $node = new TemporaryNode('vmess', 'VM', 'vm.example.com', 443, [
+            'credential' => 'uuid',
+            'tls' => 'tls',
+            'sni' => 'vm.example.com',
+            'allowInsecure' => 1,
+        ]);
+        $array = (new TemporaryNodeConverter())->convert($node, 1);
+        $this->assertSame(1, $array['tls_settings']['allow_insecure']);
+        $this->assertSame('vm.example.com', $array['tls_settings']['server_name']);
+    }
+
+    public function testVlessAllowInsecureSnakeCaseNormalized()
+    {
+        $node = new TemporaryNode('vless', 'VL', 'vl.example.com', 443, [
+            'credential' => 'uuid',
+            'security' => 'tls',
+            'sni' => 'vl.example.com',
+            'allow_insecure' => 1,
+        ]);
+        $array = (new TemporaryNodeConverter())->convert($node, 1);
+        $this->assertSame(1, $array['tls_settings']['allow_insecure']);
+    }
+
+    public function testTuicAllowInsecureSnakeCaseNormalized()
+    {
+        $node = new TemporaryNode('tuic', 'TU', 'tu.example.com', 443, [
+            'credential' => 'uuid',
+            'allow_insecure' => 1,
+            'sni' => 'tu.example.com',
+        ]);
+        $array = (new TemporaryNodeConverter())->convert($node, 1);
+        $this->assertSame(1, $array['insecure']);
+        $this->assertSame(1, $array['tls_settings']['allow_insecure']);
+    }
+
     public function testTrojanWebsocketObfsMapsNetworkSettings()
     {
         $node = new TemporaryNode('trojan', 'TJ', '104.26.15.137', 443, [

@@ -155,6 +155,27 @@ class ProtocolConsistencyTest extends TestCase
         $this->assertStringContainsString('ANY-1', $out);
     }
 
+    public function testClashVmessEmitsServernameFromSnakeCaseTlsSettings()
+    {
+        $user = $this->makeUser();
+        $servers = $this->makeServers();
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringContainsString('servername: vm.example.com', $out);
+    }
+
+    public function testClashVmessEmitsSkipCertVerifyTrue()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vmess', 'name' => 'VM-TLS', 'host' => 'vmtls.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 1, 'tls_settings' => ['server_name' => 'vmtls.example.com', 'allow_insecure' => 1], 'network_settings' => [], 'sub_uuid' => 'vm-pass'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringContainsString('servername: vmtls.example.com', $out);
+        $this->assertStringContainsString('skip-cert-verify: true', $out);
+    }
+
     public function testClashHysteria2WithoutObfsPasswordOmitsObfs()
     {
         $user = $this->makeUser();

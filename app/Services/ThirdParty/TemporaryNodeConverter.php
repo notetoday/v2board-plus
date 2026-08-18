@@ -68,7 +68,7 @@ class TemporaryNodeConverter
         $array['tls_settings'] = [
             'server_name' => (string)($settings['sni'] ?? ''),
             'fingerprint' => (string)($settings['fp'] ?? 'chrome'),
-            'allow_insecure' => (int)($settings['insecure'] ?? 0),
+            'allow_insecure' => $this->allowInsecure($settings),
             'public_key' => (string)($settings['pbk'] ?? ''),
             'short_id' => (string)($settings['sid'] ?? ''),
             'ech' => (string)($settings['ech'] ?? ''),
@@ -87,7 +87,7 @@ class TemporaryNodeConverter
         $array['tls'] = ((string)($settings['tls'] ?? '') === 'tls') ? 1 : 0;
         $array['tls_settings'] = [
             'server_name' => (string)($settings['sni'] ?? ''),
-            'allow_insecure' => (int)($settings['allowInsecure'] ?? 0),
+            'allow_insecure' => $this->allowInsecure($settings),
             'fingerprint' => (string)($settings['fp'] ?? 'chrome'),
         ];
         $array['network_settings'] = $this->mapNetworkSettings($settings);
@@ -102,7 +102,7 @@ class TemporaryNodeConverter
         $array['network'] = (string)($settings['network'] ?? 'tcp');
         $array['network_settings'] = $this->mapNetworkSettings($settings);
         $sni = (string)($settings['sni'] ?? '');
-        $allowInsecure = (int)($settings['allowInsecure'] ?? 0);
+        $allowInsecure = $this->allowInsecure($settings);
         $array['server_name'] = $sni;
         $array['allow_insecure'] = $allowInsecure;
         $array['tls_settings'] = [
@@ -132,7 +132,7 @@ class TemporaryNodeConverter
         $settings = $node->settings;
         $array = $this->base($node, $sourceId, $node->port);
         $array['version'] = $version;
-        $array['insecure'] = (int)($settings['insecure'] ?? 0);
+        $array['insecure'] = $this->allowInsecure($settings);
         $array['server_name'] = (string)($settings['peer'] ?? ($settings['sni'] ?? ''));
         $array['up_mbps'] = (string)($settings['upmbps'] ?? ($settings['up_mbps'] ?? ($settings['up'] ?? '')));
         $array['down_mbps'] = (string)($settings['downmbps'] ?? ($settings['down_mbps'] ?? ($settings['down'] ?? '')));
@@ -144,7 +144,7 @@ class TemporaryNodeConverter
         }
         $array['tls_settings'] = [
             'server_name' => (string)($settings['peer'] ?? ($settings['sni'] ?? '')),
-            'allow_insecure' => (int)($settings['insecure'] ?? 0),
+            'allow_insecure' => $this->allowInsecure($settings),
         ];
         $array['sub_uuid'] = (string)($settings['credential'] ?? '');
         return $array;
@@ -155,14 +155,14 @@ class TemporaryNodeConverter
         $settings = $node->settings;
         $array = $this->base($node, $sourceId, $node->port);
         $array['congestion_control'] = (string)($settings['congestion_control'] ?? 'cubic');
-        $array['insecure'] = (int)($settings['insecure'] ?? 0);
+        $array['insecure'] = $this->allowInsecure($settings);
         $array['disable_sni'] = (int)($settings['disable_sni'] ?? 0);
         $array['udp_relay_mode'] = (string)($settings['udp_relay_mode'] ?? 'native');
         $array['zero_rtt_handshake'] = (int)($settings['zero_rtt_handshake'] ?? 0);
         $array['server_name'] = (string)($settings['sni'] ?? '');
         $array['tls_settings'] = [
             'server_name' => (string)($settings['sni'] ?? ''),
-            'allow_insecure' => (int)($settings['insecure'] ?? 0),
+            'allow_insecure' => $this->allowInsecure($settings),
         ];
         $array['sub_uuid'] = (string)($settings['credential'] ?? '');
         return $array;
@@ -173,18 +173,28 @@ class TemporaryNodeConverter
         $settings = $node->settings;
         $array = $this->base($node, $sourceId, $node->port);
         $array['network'] = (string)($settings['network'] ?? 'tcp');
-        $array['insecure'] = (int)($settings['insecure'] ?? 0);
+        $array['insecure'] = $this->allowInsecure($settings);
         $array['server_name'] = (string)($settings['sni'] ?? '');
         $array['tls'] = ((string)($settings['security'] ?? '') === 'reality') ? 2 : 0;
         $array['tls_settings'] = [
             'server_name' => (string)($settings['sni'] ?? ''),
-            'allow_insecure' => (int)($settings['insecure'] ?? 0),
+            'allow_insecure' => $this->allowInsecure($settings),
             'fingerprint' => (string)($settings['fp'] ?? 'chrome'),
             'public_key' => (string)($settings['pbk'] ?? ''),
             'short_id' => (string)($settings['sid'] ?? ''),
         ];
         $array['sub_uuid'] = (string)($settings['credential'] ?? '');
         return $array;
+    }
+
+    private function allowInsecure(array $settings): int
+    {
+        foreach (['insecure', 'allow_insecure', 'allowInsecure'] as $key) {
+            if (isset($settings[$key]) && $settings[$key] !== '' && $settings[$key] !== null) {
+                return (int)$settings[$key];
+            }
+        }
+        return 0;
     }
 
     private function mapNetworkSettings(array $settings): array
