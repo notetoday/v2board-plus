@@ -92,10 +92,11 @@ class ProtocolConsistencyTest extends TestCase
         $servers = $this->makeServers();
         $out = (new Surge($user, $servers))->handle();
 
-        $this->assertStringContainsString('TUIC-1=tuic', $out);
+        $this->assertStringContainsString('TUIC-1=tuic-v5', $out);
+        $this->assertStringContainsString('uuid=tuic-pass', $out);
+        $this->assertStringContainsString('password=tuic-pass', $out);
         $this->assertStringContainsString('HY2-1=hysteria2', $out);
         $this->assertStringContainsString('ANY-1=anytls', $out);
-        $this->assertStringNotContainsString('VL-1', $out, 'Surge should not emit vless');
         $this->assertStringContainsString('sni=vm.example.com', $out);
         $this->assertStringContainsString('ws-path=/vm', $out);
     }
@@ -106,7 +107,9 @@ class ProtocolConsistencyTest extends TestCase
         $servers = $this->makeServers();
         $out = (new Surfboard($user, $servers))->handle();
 
-        $this->assertStringContainsString('TUIC-1=tuic', $out);
+        $this->assertStringContainsString('TUIC-1=tuic-v5', $out);
+        $this->assertStringContainsString('uuid=tuic-pass', $out);
+        $this->assertStringContainsString('password=tuic-pass', $out);
         $this->assertStringContainsString('HY2-1=hysteria2', $out);
         $this->assertStringContainsString('ANY-1=anytls', $out);
         $this->assertStringContainsString('sni=vm.example.com', $out);
@@ -124,6 +127,53 @@ class ProtocolConsistencyTest extends TestCase
         $this->assertStringContainsString('德国_01=hysteria2', $out);
         $this->assertStringNotContainsString('download-bandwidth=', $out);
         $this->assertStringContainsString('skip-cert-verify=true', $out);
+    }
+
+    public function testSurfboardHysteria2WithSalamanderEmitsObfsPassword()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => '德国_01', 'host' => 'de.example.com', 'port' => '443', 'up_mbps' => '', 'down_mbps' => '', 'server_name' => 'de.example.com', 'insecure' => 1, 'tls_settings' => [], 'obfs' => 'salamander', 'obfs_password' => 'salamander-secret', 'sub_uuid' => 'pass1'],
+        ];
+        $out = (new Surfboard($user, $servers))->handle();
+
+        $this->assertStringContainsString('salamander-password=salamander-secret', $out);
+    }
+
+    public function testSurfboardHysteria2WithPortRangeEmitsPortHopping()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => '德国_01', 'host' => 'de.example.com', 'port' => '443-8443', 'up_mbps' => '', 'down_mbps' => '', 'server_name' => 'de.example.com', 'insecure' => 1, 'tls_settings' => [], 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'pass1'],
+        ];
+        $out = (new Surfboard($user, $servers))->handle();
+
+        $this->assertStringContainsString('port-hopping="443-8443"', $out);
+    }
+
+    public function testSurfboardAnyTlsUsesPositionalPassword()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'anytls', 'name' => 'ANY-1', 'host' => 'any.example.com', 'port' => 443, 'network' => 'tcp', 'insecure' => 0, 'server_name' => 'any.example.com', 'tls_settings' => ['server_name' => 'any.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'any-pass'],
+        ];
+        $out = (new Surfboard($user, $servers))->handle();
+
+        $this->assertStringContainsString('ANY-1=anytls, any.example.com, 443, any-pass', $out);
+        $this->assertStringNotContainsString('password=any-pass', $out);
+    }
+
+    public function testSurfboardShadowsocks2022UsesBase64Password()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'shadowsocks', 'name' => 'SS-2022', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => '2022-blake3-aes-128-gcm', 'obfs' => '', 'created_at' => 1700000000, 'network' => 'tcp', 'network_settings' => []],
+        ];
+        $out = (new Surfboard($user, $servers))->handle();
+
+        $this->assertStringContainsString('SS-2022=ss', $out);
+        $this->assertStringContainsString('encrypt-method=2022-blake3-aes-128-gcm', $out);
+        $this->assertStringContainsString('password=', $out);
     }
 
     public function testSurfboardTrojanWithoutWsHostOmitsWsHeaders()
@@ -190,7 +240,7 @@ class ProtocolConsistencyTest extends TestCase
         $this->assertStringNotContainsString('"Host":""', $out);
     }
 
-    public function testSingboxTuicOmitsPasswordField()
+    public function testSingboxTuicEmitsPasswordField()
     {
         $user = $this->makeUser();
         $servers = [
@@ -199,7 +249,7 @@ class ProtocolConsistencyTest extends TestCase
         $out = (new Singbox($user, $servers))->handle()->getContent();
 
         $this->assertStringContainsString('"uuid":"tuic-pass"', $out);
-        $this->assertStringNotContainsString('"password":"tuic-pass"', $out);
+        $this->assertStringContainsString('"password":"tuic-pass"', $out);
     }
 
     public function testSingboxVmessHttpTransportHostIsArray()
@@ -312,7 +362,7 @@ class ProtocolConsistencyTest extends TestCase
         $this->assertStringContainsString("obfs-password: obfs-secret", $out);
     }
 
-    public function testClashTuicUsesTokenField()
+    public function testClashTuicUsesUuidAndPassword()
     {
         $user = $this->makeUser();
         $servers = [
@@ -320,9 +370,9 @@ class ProtocolConsistencyTest extends TestCase
         ];
         $out = (new Clash($user, $servers))->handle();
 
-        $this->assertStringContainsString('token: tuic-pass', $out);
-        $this->assertStringNotContainsString('uuid:', $out);
-        $this->assertStringNotContainsString('password:', $out);
+        $this->assertStringContainsString('uuid: tuic-pass', $out);
+        $this->assertStringContainsString('password: tuic-pass', $out);
+        $this->assertStringNotContainsString('token: tuic-pass', $out);
     }
 
     public function testClashHysteriaUsesAuthStrHyphen()
@@ -370,5 +420,272 @@ class ProtocolConsistencyTest extends TestCase
         $out = (new Clash($user, $servers))->handle();
 
         $this->assertStringContainsString('encryption: mlkem768x25519plus.native.1rtt.secret', $out);
+    }
+
+    public function testSurgeShadowsocksUsesUdpRelayAndTfo()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'shadowsocks', 'name' => 'SS-1', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => 'aes-256-gcm', 'obfs' => '', 'created_at' => time(), 'network' => 'tcp', 'network_settings' => [], 'sub_uuid' => 'ss-pass'],
+        ];
+        $out = (new Surge($user, $servers))->handle();
+
+        $this->assertStringContainsString('udp-relay=true', $out);
+        $this->assertStringContainsString('tfo=true', $out);
+        $this->assertStringNotContainsString('fast-open=', $out);
+        $this->assertStringNotContainsString('udp=true', $out);
+    }
+
+    public function testSurgeHysteria2WithSalamanderEmitsObfsPassword()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => '德国_01', 'host' => 'de.example.com', 'port' => '443', 'up_mbps' => '', 'down_mbps' => '', 'server_name' => 'de.example.com', 'insecure' => 1, 'tls_settings' => [], 'obfs' => 'salamander', 'obfs_password' => 'salamander-secret', 'sub_uuid' => 'pass1'],
+        ];
+        $out = (new Surge($user, $servers))->handle();
+
+        $this->assertStringContainsString('salamander-password=salamander-secret', $out);
+    }
+
+    public function testSurgeHysteria2WithPortRangeEmitsPortHopping()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => '德国_01', 'host' => 'de.example.com', 'port' => '443-8443', 'up_mbps' => '', 'down_mbps' => '', 'server_name' => 'de.example.com', 'insecure' => 1, 'tls_settings' => [], 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'pass1'],
+        ];
+        $out = (new Surge($user, $servers))->handle();
+
+        $this->assertStringContainsString('port-hopping="443-8443"', $out);
+    }
+
+    public function testSurgeAnyTlsEmitsReuseFalse()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'anytls', 'name' => 'ANY-1', 'host' => 'any.example.com', 'port' => 443, 'network' => 'tcp', 'insecure' => 0, 'server_name' => 'any.example.com', 'tls_settings' => ['server_name' => 'any.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'any-pass'],
+        ];
+        $out = (new Surge($user, $servers))->handle();
+
+        $this->assertStringContainsString('reuse=false', $out);
+    }
+
+    public function testSingboxHysteria2WithPortRangeEmitsServerPorts()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => 'HY2-PORTS', 'host' => 'hy2.example.com', 'port' => '443-8443', 'tls_settings' => ['server_name' => 'hy2.example.com', 'allow_insecure' => 0], 'insecure' => 0, 'server_name' => 'hy2.example.com', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy2-pass'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"server_ports":["443:8443"]', $out);
+        $this->assertStringContainsString('"hop_interval":"30s"', $out);
+    }
+
+    public function testSingboxHysteria2SinglePortOmitsServerPorts()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => 'HY2-1', 'host' => 'hy2.example.com', 'port' => '443', 'tls_settings' => ['server_name' => 'hy2.example.com', 'allow_insecure' => 0], 'insecure' => 0, 'server_name' => 'hy2.example.com', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy2-pass'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"server_port":443', $out);
+        $this->assertStringNotContainsString('server_ports', $out);
+    }
+
+    public function testSingboxVmessHttpupgradeTransport()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vmess', 'name' => 'VM-HTTPUP', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'httpupgrade', 'tls' => 1, 'network_settings' => ['path' => '/upgrade', 'host' => 'vm.example.com'], 'sub_uuid' => 'vm-pass'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"type":"httpupgrade"', $out);
+        $this->assertStringContainsString('"host":"vm.example.com"', $out);
+        $this->assertStringContainsString('"path":"/upgrade"', $out);
+    }
+
+    public function testClashHysteria2EmitsBrutalUpDown()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => 'HY2-BW', 'host' => 'hy2.example.com', 'port' => '443', 'tls_settings' => ['server_name' => 'hy2.example.com', 'allow_insecure' => 0], 'insecure' => 0, 'server_name' => 'hy2.example.com', 'up_mbps' => '50', 'down_mbps' => '100', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy2-pass'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringContainsString("up: '100'", $out);
+        $this->assertStringContainsString("down: '50'", $out);
+    }
+
+    public function testClashHysteria2WithoutBandwidthOmitsUpDown()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => 'HY2-EMPTY', 'host' => 'hy2.example.com', 'port' => '443', 'tls_settings' => ['server_name' => 'hy2.example.com', 'allow_insecure' => 0], 'insecure' => 0, 'server_name' => 'hy2.example.com', 'up_mbps' => '', 'down_mbps' => '', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy2-pass'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringNotContainsString('up:', $out);
+        $this->assertStringNotContainsString('down:', $out);
+    }
+
+    public function testSurgeVmessWsSecurityMapsEncryptMethod()
+    {
+        $user = $this->makeUser();
+        $base = ['type' => 'vmess', 'name' => 'VM-WS', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 0, 'sub_uuid' => 'vm-pass'];
+
+        $servers = [$base + ['network_settings' => ['path' => '/ws', 'security' => 'chacha20-poly1305']]];
+        $out = (new Surge($user, $servers))->handle();
+        $this->assertStringContainsString('encrypt-method=chacha20-ietf-poly1305', $out);
+        $this->assertStringNotContainsString('encrypt-method=chacha20-poly1305', $out);
+
+        $servers = [$base + ['network_settings' => ['path' => '/ws', 'security' => 'auto']]];
+        $out = (new Surge($user, $servers))->handle();
+        $this->assertStringNotContainsString('encrypt-method=', $out);
+    }
+
+    public function testSurfboardVmessWsSecurityMapsEncryptMethod()
+    {
+        $user = $this->makeUser();
+        $base = ['type' => 'vmess', 'name' => 'VM-WS', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 0, 'sub_uuid' => 'vm-pass'];
+
+        $servers = [$base + ['network_settings' => ['path' => '/ws', 'security' => 'chacha20-poly1305']]];
+        $out = (new Surfboard($user, $servers))->handle();
+        $this->assertStringContainsString('encrypt-method=chacha20-ietf-poly1305', $out);
+        $this->assertStringNotContainsString('encrypt-method=chacha20-poly1305', $out);
+
+        $servers = [$base + ['network_settings' => ['path' => '/ws', 'security' => 'none']]];
+        $out = (new Surfboard($user, $servers))->handle();
+        $this->assertStringNotContainsString('encrypt-method=', $out);
+    }
+
+    public function testSurgeShadowsocksTlsObfs()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'shadowsocks', 'name' => 'SS-TLS', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => 'aes-256-gcm', 'obfs' => 'tls', 'obfs-host' => 'obfs.example.com', 'obfs-path' => '', 'created_at' => time(), 'network' => 'tcp', 'network_settings' => [], 'sub_uuid' => 'ss-pass'],
+        ];
+        $out = (new Surge($user, $servers))->handle();
+
+        $this->assertStringContainsString('obfs=tls', $out);
+        $this->assertStringContainsString('obfs-host=obfs.example.com', $out);
+        $this->assertStringNotContainsString('obfs-uri=', $out);
+    }
+
+    public function testSurfboardShadowsocksTlsObfs()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'shadowsocks', 'name' => 'SS-TLS', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => 'aes-256-gcm', 'obfs' => 'tls', 'obfs-host' => 'obfs.example.com', 'obfs-path' => '', 'created_at' => time(), 'network' => 'tcp', 'network_settings' => [], 'sub_uuid' => 'ss-pass'],
+        ];
+        $out = (new Surfboard($user, $servers))->handle();
+
+        $this->assertStringContainsString('obfs=tls', $out);
+        $this->assertStringContainsString('obfs-host=obfs.example.com', $out);
+        $this->assertStringNotContainsString('obfs-uri=', $out);
+    }
+
+    public function testLoonShadowsocksTlsObfs()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'shadowsocks', 'name' => 'SS-TLS', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => 'aes-256-gcm', 'obfs' => 'tls', 'obfs-host' => 'obfs.example.com', 'obfs-path' => '', 'created_at' => time(), 'network' => 'tcp', 'network_settings' => [], 'sub_uuid' => 'ss-pass'],
+        ];
+        $out = (new Loon($user, $servers))->handle();
+
+        $this->assertStringContainsString('obfs-name=tls', $out);
+        $this->assertStringContainsString('obfs-host=obfs.example.com', $out);
+        $this->assertStringNotContainsString('obfs-uri=', $out);
+    }
+
+    public function testSingboxShadowsocksTlsObfs()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'shadowsocks', 'name' => 'SS-TLS', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => 'aes-256-gcm', 'obfs' => 'tls', 'obfs-host' => 'obfs.example.com', 'obfs-path' => '', 'created_at' => time(), 'network' => 'tcp', 'network_settings' => [], 'sub_uuid' => 'ss-pass'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"plugin":"obfs-local"', $out);
+        $this->assertStringContainsString('obfs=tls', $out);
+        $this->assertStringContainsString('obfs-host=obfs.example.com', $out);
+    }
+
+    public function testClashShadowsocksTlsObfs()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'shadowsocks', 'name' => 'SS-TLS', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => 'aes-256-gcm', 'obfs' => 'tls', 'obfs-host' => 'obfs.example.com', 'obfs-path' => '', 'created_at' => time(), 'network' => 'tcp', 'network_settings' => [], 'sub_uuid' => 'ss-pass'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringContainsString('plugin: obfs', $out);
+        $this->assertStringContainsString("mode: tls", $out);
+        $this->assertStringContainsString('host: obfs.example.com', $out);
+    }
+
+    public function testQuantumultXShadowsocksTlsObfs()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'shadowsocks', 'name' => 'SS-TLS', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => 'aes-256-gcm', 'obfs' => 'tls', 'obfs-host' => 'obfs.example.com', 'obfs-path' => '', 'created_at' => time(), 'network' => 'tcp', 'network_settings' => [], 'sub_uuid' => 'ss-pass'],
+        ];
+        $out = base64_decode((new QuantumultX($user, $servers))->handle());
+
+        $this->assertStringContainsString('obfs=tls', $out);
+        $this->assertStringContainsString('obfs-host=obfs.example.com', $out);
+    }
+
+    public function testStashHysteria2EmitsBrutalUpDown()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => 'HY2-BW', 'host' => 'hy2.example.com', 'port' => '443', 'tls_settings' => ['server_name' => 'hy2.example.com', 'allow_insecure' => 0], 'insecure' => 0, 'server_name' => 'hy2.example.com', 'up_mbps' => '50', 'down_mbps' => '100', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy2-pass'],
+        ];
+        $out = (new Stash($user, $servers))->handle();
+
+        $this->assertStringContainsString("up: '100'", $out);
+        $this->assertStringContainsString("down: '50'", $out);
+    }
+
+    public function testStashHysteria2WithoutBandwidthOmitsUpDown()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => 'HY2-EMPTY', 'host' => 'hy2.example.com', 'port' => '443', 'tls_settings' => ['server_name' => 'hy2.example.com', 'allow_insecure' => 0], 'insecure' => 0, 'server_name' => 'hy2.example.com', 'up_mbps' => '', 'down_mbps' => '', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy2-pass'],
+        ];
+        $out = (new Stash($user, $servers))->handle();
+
+        $this->assertStringNotContainsString('up:', $out);
+        $this->assertStringNotContainsString('down:', $out);
+    }
+
+    public function testStashTuicEmitsTuningOptions()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'tuic', 'name' => 'TUIC-1', 'host' => 'tuic.example.com', 'port' => 8443, 'disable_sni' => 0, 'zero_rtt_handshake' => 0, 'udp_relay_mode' => 'native', 'congestion_control' => 'cubic', 'insecure' => 0, 'server_name' => 'tuic.example.com', 'tls_settings' => ['server_name' => 'tuic.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'tuic-pass'],
+        ];
+        $out = (new Stash($user, $servers))->handle();
+
+        $this->assertStringContainsString('disable-sni: false', $out);
+        $this->assertStringContainsString('reduce-rtt: false', $out);
+        $this->assertStringContainsString('udp-relay-mode: native', $out);
+        $this->assertStringContainsString('congestion-controller: cubic', $out);
+    }
+
+    public function testStashAnyTlsEmitsUdpAndAlpn()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'anytls', 'name' => 'ANY-1', 'host' => 'any.example.com', 'port' => 443, 'network' => 'tcp', 'insecure' => 0, 'server_name' => 'any.example.com', 'tls_settings' => ['server_name' => 'any.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'any-pass'],
+        ];
+        $out = (new Stash($user, $servers))->handle();
+
+        $this->assertStringContainsString('udp: true', $out);
+        $this->assertStringContainsString('alpn:', $out);
+        $this->assertStringContainsString('h2', $out);
+        $this->assertStringContainsString('http/1.1', $out);
     }
 }

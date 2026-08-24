@@ -126,13 +126,16 @@ class Stash
         $array['cipher'] = $server['cipher'];
         $array['password'] = $password;
         $array['udp'] = true;
-        if (isset($server['obfs']) && $server['obfs'] === 'http') {
+        if (isset($server['obfs']) && in_array($server['obfs'], ['http', 'tls'])) {
             $array['plugin'] = 'obfs';
             $plugin_opts = [
-                'mode' => 'http',
+                'mode' => $server['obfs'],
             ];
             if (isset($server['obfs-host']) && !empty($server['obfs-host'])) {
                 $plugin_opts['host'] = $server['obfs-host'];
+            }
+            if ($server['obfs'] === 'http' && isset($server['obfs-path']) && !empty($server['obfs-path'])) {
+                $plugin_opts['path'] = $server['obfs-path'];
             }
             $array['plugin-opts'] = $plugin_opts;
         }
@@ -314,10 +317,10 @@ class Stash
             'uuid' => $password,
             'password' => $password,
             'alpn' => ['h3'],
-            //'disable-sni' => $server['disable_sni'] ? true : false,
-            //'reduce-rtt' => $server['zero_rtt_handshake'] ? true : false,
-            //'udp-relay-mode' => $server['udp_relay_mode'] ?? 'native',
-            //congestion-controller' => $server['congestion_control'] ?? 'cubic',
+            'disable-sni' => $server['disable_sni'] ? true : false,
+            'reduce-rtt' => $server['zero_rtt_handshake'] ? true : false,
+            'udp-relay-mode' => $server['udp_relay_mode'] ?? 'native',
+            'congestion-controller' => $server['congestion_control'] ?? 'cubic',
             'skip-cert-verify' => $server['insecure'] ? true : false,
         ];
         if (isset($server['server_name'])) {
@@ -364,9 +367,10 @@ class Stash
             if (isset($server['obfs']) && isset($server['obfs_password'])){
                 $array['obfs'] = $server['obfs_password'];
             }
-            //Todo:完善客户端上下行
-            $array['up'] = $server['down_mbps'];
-            $array['down'] = $server['up_mbps'];
+            if (!empty($server['down_mbps']) || !empty($server['up_mbps'])) {
+                $array['up'] = $server['down_mbps'];
+                $array['down'] = $server['up_mbps'];
+            }
             $array['protocol'] = 'udp';
         }
 
@@ -398,6 +402,10 @@ class Stash
             $array['ports'] = $server['port'];
             $array['mport'] = $server['port'];
         }
+        if (!empty($server['down_mbps']) || !empty($server['up_mbps'])) {
+            $array['up'] = $server['down_mbps'];
+            $array['down'] = $server['up_mbps'];
+        }
         if (!empty($server['obfs']) && !empty($server['obfs_password'])){
             $array['obfs'] = $server['obfs'];
             $array['obfs-password'] = $server['obfs_password'];
@@ -413,6 +421,11 @@ class Stash
             'server' => $server['host'],
             'port' => $server['port'],
             'password' => $password,
+            'udp' => true,
+            'alpn' => [
+                'h2',
+                'http/1.1',
+            ],
         ];
         if (!empty($server['tls'])) {
             $array['tls'] = true;

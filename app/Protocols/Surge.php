@@ -111,17 +111,17 @@ class Surge
         $config[] = "encrypt-method={$server['cipher']}";
         $config[] = "password={$password}";
 
-        if (isset($server['obfs']) && $server['obfs'] === 'http') {
+        if (isset($server['obfs']) && in_array($server['obfs'], ['http', 'tls'])) {
             $config[] = "obfs={$server['obfs']}";
             if (isset($server['obfs-host']) && !empty($server['obfs-host'])) {
                 $config[] = "obfs-host={$server['obfs-host']}";
             }
-            if (isset($server['obfs-path'])) {
+            if ($server['obfs'] === 'http' && isset($server['obfs-path']) && !empty($server['obfs-path'])) {
                 $config[] = "obfs-uri={$server['obfs-path']}";
             }
         }
-        $config[] = 'fast-open=false';
-        $config[] = 'udp=true';
+        $config[] = 'tfo=true';
+        $config[] = 'udp-relay=true';
         $uri = implode(',', $config);
         $uri .= "\r\n";
 
@@ -160,8 +160,15 @@ class Surge
                     array_push($config, "ws-path={$wsSettings['path']}");
                 if (isset($wsSettings['headers']['Host']) && !empty($wsSettings['headers']['Host']))
                     array_push($config, "ws-headers=Host:{$wsSettings['headers']['Host']}");
-                if (isset($wsSettings['security'])) 
-                    array_push($config, "encrypt-method={$wsSettings['security']}");
+                if (isset($wsSettings['security'])) {
+                    $encryptMethod = match ($wsSettings['security']) {
+                        'aes-128-gcm' => 'aes-128-gcm',
+                        'chacha20-poly1305' => 'chacha20-ietf-poly1305',
+                        default => null,
+                    };
+                    if ($encryptMethod !== null)
+                        array_push($config, "encrypt-method={$encryptMethod}");
+                }
             }
         }
 
@@ -203,10 +210,11 @@ class Surge
     public static function buildTuic($password, $server)
     {
         $config = [
-            "{$server['name']}=tuic",
+            "{$server['name']}=tuic-v5",
             "{$server['host']}",
             "{$server['port']}",
-            "token={$password}",
+            "uuid={$password}",
+            "password={$password}",
             "alpn=h3",
             'udp-relay=true'
         ];
@@ -242,11 +250,19 @@ class Surge
             "password={$password}",
             !empty($server['up_mbps']) ? "download-bandwidth={$server['up_mbps']}" : "",
             $server['server_name'] ? "sni={$server['server_name']}" : "",
-            // 'tfo=true', 
             'udp-relay=true'
         ];
-        if (!empty($server['insecure'])) {
-            array_push($config, $server['insecure'] ? 'skip-cert-verify=true' : 'skip-cert-verify=false');
+        $tlsSettings = $server['tls_settings'] ?? [];
+        $insecure = $server['insecure'] ?? ($tlsSettings['allow_insecure'] ?? 0);
+        if (!empty($insecure)) {
+            array_push($config, $insecure ? 'skip-cert-verify=true' : 'skip-cert-verify=false');
+        }
+        if (count($parts) !== 1 || strpos($firstPart, '-') !== false) {
+            $hopping = str_replace(',', ';', (string)$server['port']);
+            $config[] = "port-hopping=\"{$hopping}\"";
+        }
+        if (!empty($server['obfs']) && !empty($server['obfs_password'])) {
+            $config[] = 'salamander-password=' . $server['obfs_password'];
         }
         $config = array_filter($config);
         $uri = implode(',', $config);
@@ -272,6 +288,7 @@ class Surge
         if ($sni) {
             $config[] = "sni={$sni}";
         }
+        $config[] = "reuse=false";
 
         $uri = implode(', ', $config);
         $uri .= "\r\n";

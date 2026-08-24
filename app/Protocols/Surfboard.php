@@ -33,10 +33,28 @@ class Surfboard
             }
             if ($item['type'] === 'shadowsocks'
                 && in_array($item['cipher'], [
+                    '2022-blake3-aes-128-gcm',
+                    '2022-blake3-aes-256-gcm',
                     'aes-128-gcm',
                     'aes-192-gcm',
                     'aes-256-gcm',
-                    'chacha20-ietf-poly1305'
+                    'chacha20-ietf-poly1305',
+                    'xchacha20-ietf-poly1305',
+                    'aes-128-cfb',
+                    'aes-192-cfb',
+                    'aes-256-cfb',
+                    'aes-128-ctr',
+                    'aes-192-ctr',
+                    'aes-256-ctr',
+                    'rc4',
+                    'rc4-md5',
+                    'bf-cfb',
+                    'camellia-128-cfb',
+                    'camellia-192-cfb',
+                    'camellia-256-cfb',
+                    'salsa20',
+                    'chacha20',
+                    'chacha20-ietf'
                 ])
             ) {
                 // [Proxy]
@@ -107,6 +125,15 @@ class Surfboard
 
     public static function buildShadowsocks($password, $server)
     {
+        if (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-128-gcm') {
+            $serverKey = Helper::getServerKey($server['created_at'], 16);
+            $userKey = Helper::uuidToBase64($password, 16);
+            $password = "{$serverKey}:{$userKey}";
+        } elseif (!isset($server['sub_uuid']) && $server['cipher'] === '2022-blake3-aes-256-gcm') {
+            $serverKey = Helper::getServerKey($server['created_at'], 32);
+            $userKey = Helper::uuidToBase64($password, 32);
+            $password = "{$serverKey}:{$userKey}";
+        }
         $config = [
             "{$server['name']}=ss",
             "{$server['host']}",
@@ -116,6 +143,15 @@ class Surfboard
             'tfo=true',
             'udp-relay=true'
         ];
+        if (isset($server['obfs']) && in_array($server['obfs'], ['http', 'tls'])) {
+            $config[] = "obfs={$server['obfs']}";
+            if (isset($server['obfs-host']) && !empty($server['obfs-host'])) {
+                $config[] = "obfs-host={$server['obfs-host']}";
+            }
+            if ($server['obfs'] === 'http' && isset($server['obfs-path']) && !empty($server['obfs-path'])) {
+                $config[] = "obfs-uri={$server['obfs-path']}";
+            }
+        }
         $config = array_filter($config);
         $uri = implode(',', $config);
         $uri .= "\r\n";
@@ -154,8 +190,15 @@ class Surfboard
                     array_push($config, "ws-path={$wsSettings['path']}");
                 if (isset($wsSettings['headers']['Host']) && !empty($wsSettings['headers']['Host']))
                     array_push($config, "ws-headers=Host:{$wsSettings['headers']['Host']}");
-                if (isset($wsSettings['security']))
-                    array_push($config, "encrypt-method={$wsSettings['security']}");
+                if (isset($wsSettings['security'])) {
+                    $encryptMethod = match ($wsSettings['security']) {
+                        'aes-128-gcm' => 'aes-128-gcm',
+                        'chacha20-poly1305' => 'chacha20-ietf-poly1305',
+                        default => null,
+                    };
+                    if ($encryptMethod !== null)
+                        array_push($config, "encrypt-method={$encryptMethod}");
+                }
             }
         }
 
@@ -196,10 +239,11 @@ class Surfboard
     public static function buildTuic($password, $server)
     {
         $config = [
-            "{$server['name']}=tuic",
+            "{$server['name']}=tuic-v5",
             "{$server['host']}",
             "{$server['port']}",
-            "token={$password}",
+            "uuid={$password}",
+            "password={$password}",
             "alpn=h3",
             'udp-relay=true'
         ];
@@ -241,6 +285,13 @@ class Surfboard
         if (!empty($insecure)) {
             array_push($config, $insecure ? 'skip-cert-verify=true' : 'skip-cert-verify=false');
         }
+        if (count($parts) !== 1 || strpos($firstPart, '-') !== false) {
+            $hopping = str_replace(',', ';', (string)$server['port']);
+            $config[] = "port-hopping=\"{$hopping}\"";
+        }
+        if (!empty($server['obfs']) && !empty($server['obfs_password'])) {
+            $config[] = 'salamander-password=' . $server['obfs_password'];
+        }
         $config = array_filter($config);
         $uri = implode(',', $config);
         $uri .= "\r\n";
@@ -257,7 +308,7 @@ class Surfboard
             "{$server['name']}=anytls",
             "{$server['host']}",
             "{$server['port']}",
-            "password={$password}",
+            "{$password}",
             "skip-cert-verify={$allowInsecure}",
         ];
 

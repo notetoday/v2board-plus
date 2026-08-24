@@ -117,14 +117,14 @@ class Singbox
         $array['method'] = $server['cipher'];
         $array['password'] = $password;
         $array['domain_resolver'] = 'local';
-        if (isset($server['obfs']) && $server['obfs'] === 'http') {
+        if (isset($server['obfs']) && in_array($server['obfs'], ['http', 'tls'])) {
             $array['plugin'] = 'obfs-local';
             $plugin_opts_parts = [];
             $plugin_opts_parts[] = "obfs=" . $server['obfs'];
-            if (isset($server['obfs-host'])) {
+            if (isset($server['obfs-host']) && !empty($server['obfs-host'])) {
                 $plugin_opts_parts[] = "obfs-host=" . $server['obfs-host'];
             }
-            if (isset($server['obfs-path'])) {
+            if ($server['obfs'] === 'http' && isset($server['obfs-path']) && !empty($server['obfs-path'])) {
                 $plugin_opts_parts[] = "path=" . $server['obfs-path'];
             }
             $array['plugin_opts'] = implode(';', $plugin_opts_parts);
@@ -197,6 +197,12 @@ class Singbox
             $array['transport']['type'] ='grpc';
             $grpcSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? []);
             if (isset($grpcSettings['serviceName'])) $array['transport']['service_name'] = $grpcSettings['serviceName'];
+        }
+        if ($server['network'] === 'httpupgrade') {
+            $array['transport']['type'] = 'httpupgrade';
+            $httpupgradeSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? []);
+            if (isset($httpupgradeSettings['host']) && !empty($httpupgradeSettings['host'])) $array['transport']['host'] = $httpupgradeSettings['host'];
+            if (isset($httpupgradeSettings['path']) && !empty($httpupgradeSettings['path'])) $array['transport']['path'] = $httpupgradeSettings['path'];
         }
 
         return $array;
@@ -288,6 +294,14 @@ class Singbox
                 if (isset($grpcSettings['serviceName'])) $array['transport']['service_name'] = $grpcSettings['serviceName'];
             }
         }
+        if ($server['network'] === 'httpupgrade') {
+            $array['transport']['type'] = 'httpupgrade';
+            if ($server['network_settings']) {
+                $httpupgradeSettings = $server['network_settings'];
+                if (isset($httpupgradeSettings['host']) && !empty($httpupgradeSettings['host'])) $array['transport']['host'] = $httpupgradeSettings['host'];
+                if (isset($httpupgradeSettings['path']) && !empty($httpupgradeSettings['path'])) $array['transport']['path'] = $httpupgradeSettings['path'];
+            }
+        }
 
         return $array;
     }
@@ -353,6 +367,7 @@ class Singbox
         $array['server'] = $server['host'];
         $array['server_port'] = $server['port'];
         $array['uuid'] = $password;
+        $array['password'] = $password;
         $array['congestion_control'] = $server['congestion_control'] ?? 'cubic';
         $array['udp_relay_mode'] = $server['udp_relay_mode'] ?? 'native';
         $array['zero_rtt_handshake'] = $server['zero_rtt_handshake'] ? true : false;
@@ -498,18 +513,22 @@ class Singbox
 
     protected function buildHysteria2($password, $server)
     {
-        $parts = explode(",",$server['port']);
-        $firstPart = $parts[0];
-        if (strpos($firstPart, '-') !== false) {
-            $range = explode('-', $firstPart);
-            $firstPort = $range[0];
+        $parts = array_map('trim', explode(',', $server['port']));
+        $portConfig = [];
+
+        if (count($parts) === 1 && !str_contains($parts[0], '-')) {
+            $port = (int)$parts[0];
         } else {
-            $firstPort = $firstPart;
+            foreach ($parts as $part) {
+                if (str_contains($part, '-')) {
+                    $portConfig[] = str_replace('-', ':', $part);
+                }
+            }
         }
+
         $tlsSettings = $server['tls_settings'] ?? [];
         $array = [
             'server' => $server['host'],
-            'server_port' => (int)$firstPort,
             'tls' => [
                 'enabled' => true,
                 'insecure' => ($tlsSettings['allow_insecure'] ?? 0) == 1 ? true : false,
@@ -520,6 +539,14 @@ class Singbox
             'tag' => $server['name'],
             'type' => 'hysteria2'
         ];
+
+        if (isset($port)) {
+            $array['server_port'] = $port;
+        } else {
+            $array['server_ports'] = $portConfig;
+            $array['hop_interval'] = '30s';
+        }
+
         if (!empty($server['obfs']) && !empty($server['obfs_password'])) {
             $array['obfs']['type'] = $server['obfs'];
             $array['obfs']['password'] = $server['obfs_password'];

@@ -78,6 +78,12 @@ class QuantumultX
                     $server['network_settings']['path'] = $server['obfs_settings']['path'];
                 }
             }
+            if (!empty($server['obfs-host'])) {
+                $server['network_settings']['headers']['Host'] = $server['obfs-host'];
+            }
+            if (!empty($server['obfs-path'])) {
+                $server['network_settings']['path'] = $server['obfs-path'];
+            }
         }
 
         // ss2022 处理
@@ -98,15 +104,15 @@ class QuantumultX
         // 传输层
         $network = $server['network'] ?? 'tcp';
 
-        if ($network === 'http') {
-            $config[] = 'obfs=http';
+        if ($network === 'http' || $network === 'tls') {
+            $config[] = "obfs={$network}";
 
             $netSettings = $server['network_settings'] ?? [];
             $host = $netSettings['headers']['Host'] ?? $netSettings['Host'] ?? null;
             $path = $netSettings['path'] ?? null;
 
             if ($host) $config[] = "obfs-host={$host}";
-            if ($path) $config[] = "obfs-uri={$path}";
+            if ($network === 'http' && $path) $config[] = "obfs-uri={$path}";
         }
 
         $config[] = 'fast-open=false';

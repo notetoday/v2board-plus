@@ -65,12 +65,12 @@ class Loon
         $config[] = $server['cipher'];
         $config[] = $password;
 
-        if (isset($server['obfs']) && $server['obfs'] === 'http') {
+        if (isset($server['obfs']) && in_array($server['obfs'], ['http', 'tls'])) {
             $config[] = "obfs-name={$server['obfs']}";
             if (isset($server['obfs-host']) && !empty($server['obfs-host'])) {
                 $config[] = "obfs-host={$server['obfs-host']}";
             }
-            if (isset($server['obfs-path'])) {
+            if ($server['obfs'] === 'http' && isset($server['obfs-path']) && !empty($server['obfs-path'])) {
                 $config[] = "obfs-uri={$server['obfs-path']}";
             }
         }

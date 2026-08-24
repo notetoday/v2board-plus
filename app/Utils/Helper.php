@@ -228,6 +228,8 @@ class Helper
         $uri = "ss://{$str}@{$add}:{$server['port']}";
         if ($server['obfs'] == 'http') {
             $uri .= "?plugin=obfs-local;obfs=http;obfs-host={$server['obfs-host']};path={$server['obfs-path']}";
+        } else if ($server['obfs'] == 'tls') {
+            $uri .= "?plugin=obfs-local;obfs=tls;obfs-host={$server['obfs-host']}";
         } else if ((($server['network'] ?? null) == 'http') && isset($server['network_settings']['Host'])) {
             $path = $server['network_settings']['path'] ?? '/';
             $uri .= "?plugin=obfs-local;obfs=tls;obfs-host={$server['network_settings']['Host']};path={$path}";

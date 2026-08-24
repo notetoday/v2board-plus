@@ -130,17 +130,17 @@ class Clash
         $array['cipher'] = $server['cipher'];
         $array['password'] = $password;
         $array['udp'] = true;
-        if (isset($server['obfs']) && $server['obfs'] === 'http') {
+        if (isset($server['obfs']) && in_array($server['obfs'], ['http', 'tls'])) {
             $array['plugin'] = 'obfs';
             $plugin_opts = [
-                'mode' => 'http'
+                'mode' => $server['obfs']
             ];
             if (isset($server['obfs-host'])) {
                 $plugin_opts['host'] = $server['obfs-host'];
             } else {
                 $plugin_opts['host'] = '';
             }
-            if (isset($server['obfs-path'])) {
+            if ($server['obfs'] === 'http' && isset($server['obfs-path'])) {
                 $plugin_opts['path'] = $server['obfs-path'];
             }
             $array['plugin-opts'] = $plugin_opts;
@@ -386,7 +386,8 @@ class Clash
             'type' => 'tuic',
             'server' => $server['host'],
             'port' => $server['port'],
-            'token' => $password,
+            'uuid' => $password,
+            'password' => $password,
             'alpn' => ['h3'],
             'disable-sni' => $server['disable_sni'] ? true : false,
             'reduce-rtt' => $server['zero_rtt_handshake'] ? true : false,
@@ -490,6 +491,10 @@ class Clash
         $array['port'] = (int)$firstPort;
         if (count($parts) !== 1 || strpos($parts[0], '-') !== false) {
             $array['ports'] = $server['port'];
+        }
+        if (!empty($server['down_mbps']) || !empty($server['up_mbps'])) {
+            $array['up'] = $server['down_mbps'];
+            $array['down'] = $server['up_mbps'];
         }
         if (!empty($server['obfs']) && !empty($server['obfs_password'])){
             $array['obfs'] = $server['obfs'];
