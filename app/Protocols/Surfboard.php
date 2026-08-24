@@ -180,10 +180,10 @@ class Surfboard
         }
         if(isset($server['network']) && $server['network'] === "ws") {
             array_push($config, "ws=true");
-            if(isset($server['network_settings']['path'])) {
+            if(isset($server['network_settings']['path']) && !empty($server['network_settings']['path'])) {
                 array_push($config, "ws-path={$server['network_settings']['path']}");
             }
-            if(isset($server['network_settings']['headers']['Host'])) {
+            if(isset($server['network_settings']['headers']['Host']) && !empty($server['network_settings']['headers']['Host'])) {
                 array_push($config, "ws-headers=Host:{$server['network_settings']['headers']['Host']}");
             }
         }
@@ -232,7 +232,7 @@ class Surfboard
             "{$server['host']}",
             "{$firstPort}",
             "password={$password}",
-            "download-bandwidth={$server['up_mbps']}",
+            !empty($server['up_mbps']) ? "download-bandwidth={$server['up_mbps']}" : "",
             $server['server_name'] ? "sni={$server['server_name']}" : "",
             'udp-relay=true'
         ];

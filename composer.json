@@ -12,6 +12,7 @@
     "license": "MIT",
     "require": {
         "php": "^7.3.0 || ^8.0",
+        "doctrine/instantiator": "^1.5.0",
         "fideloper/proxy": "^4.4",
         "firebase/php-jwt": "^6.3@stable || ^7.0",
         "google/recaptcha": "^1.2",
@@ -24,7 +25,7 @@
         "php-curl-class/php-curl-class": "^8.6",
         "rybakit/msgpack": "^0.9.1",
         "stripe/stripe-php": "^v14.9.0",
-        "symfony/yaml": "^4.3"
+        "symfony/yaml": "^6.4"
     },
     "require-dev": {
         "facade/ignition": "^2.3.6",

@@ -6,6 +6,7 @@ use App\Protocols\Clash;
 use App\Protocols\Loon;
 use App\Protocols\QuantumultX;
 use App\Protocols\Shadowrocket;
+use App\Protocols\Singbox\Singbox;
 use App\Protocols\Stash;
 use App\Protocols\Surfboard;
 use App\Protocols\Surge;
@@ -110,6 +111,121 @@ class ProtocolConsistencyTest extends TestCase
         $this->assertStringContainsString('ANY-1=anytls', $out);
         $this->assertStringContainsString('sni=vm.example.com', $out);
         $this->assertStringContainsString('ws-path=/vm', $out);
+    }
+
+    public function testSurfboardHysteria2WithoutBandwidthOmitsDownloadBandwidth()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => '德国_01', 'host' => 'de.example.com', 'port' => '443', 'up_mbps' => '', 'down_mbps' => '', 'server_name' => 'de.example.com', 'insecure' => 1, 'tls_settings' => [], 'sub_uuid' => 'pass1'],
+        ];
+        $out = (new Surfboard($user, $servers))->handle();
+
+        $this->assertStringContainsString('德国_01=hysteria2', $out);
+        $this->assertStringNotContainsString('download-bandwidth=', $out);
+        $this->assertStringContainsString('skip-cert-verify=true', $out);
+    }
+
+    public function testSurfboardTrojanWithoutWsHostOmitsWsHeaders()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'trojan', 'name' => '法国_03', 'host' => 'fr.example.com', 'port' => '443', 'network' => 'ws', 'server_name' => 'fr.example.com', 'allow_insecure' => 0, 'network_settings' => ['path' => '/assignment', 'headers' => ['Host' => '']], 'sub_uuid' => 'pass1'],
+        ];
+        $out = (new Surfboard($user, $servers))->handle();
+
+        $this->assertStringContainsString('ws=true', $out);
+        $this->assertStringContainsString('ws-path=/assignment', $out);
+        $this->assertStringNotContainsString('ws-headers=Host:', $out);
+    }
+
+    public function testSurgeHysteria2WithoutBandwidthOmitsDownloadBandwidth()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => '德国_01', 'host' => 'de.example.com', 'port' => '443', 'up_mbps' => '', 'down_mbps' => '', 'server_name' => 'de.example.com', 'insecure' => 1, 'tls_settings' => [], 'sub_uuid' => 'pass1'],
+        ];
+        $out = (new Surge($user, $servers))->handle();
+
+        $this->assertStringContainsString('德国_01=hysteria2', $out);
+        $this->assertStringNotContainsString('download-bandwidth=', $out);
+        $this->assertStringContainsString('skip-cert-verify=true', $out);
+    }
+
+    public function testSingboxVlessRealityWithoutFlowDefaultsToVisionAndOmitsPacketEncoding()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vless', 'name' => '俄罗斯_02', 'host' => '176.124.222.105', 'port' => 6443, 'network' => 'tcp', 'tls' => 2, 'flow' => '', 'tls_settings' => ['server_name' => 'api.vkimages.io', 'fingerprint' => 'qq', 'allow_insecure' => 0, 'public_key' => 'sgFF', 'short_id' => '844352756c1fabba', 'ech' => '', 'ech_config' => ''], 'network_settings' => [], 'sub_uuid' => '440f3c08'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"flow":"xtls-rprx-vision"', $out);
+        $this->assertStringNotContainsString('"packet_encoding":"xudp"', $out);
+        $this->assertStringContainsString('"reality"', $out);
+    }
+
+    public function testSingboxVlessNonRealityWithoutFlowEmitsPacketEncoding()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vless', 'name' => 'VL-1', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0, 'public_key' => '', 'short_id' => '', 'ech' => '', 'ech_config' => ''], 'network_settings' => ['path' => '/x', 'headers' => ['Host' => 'vl.example.com']], 'sub_uuid' => 'vl-pass'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"packet_encoding":"xudp"', $out);
+        $this->assertStringNotContainsString('"flow":"', $out);
+    }
+
+    public function testSingboxTrojanWsWithoutHostOmitsEmptyHostHeader()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'trojan', 'name' => '法国_03', 'host' => '104.26.15.137', 'port' => 443, 'network' => 'ws', 'server_name' => 'www.ignitelimit.com', 'allow_insecure' => 0, 'network_settings' => ['path' => '/assignment', 'headers' => ['Host' => '']], 'tls_settings' => ['server_name' => 'www.ignitelimit.com', 'allow_insecure' => 0], 'sub_uuid' => 'humanity'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"path":"/assignment"', $out);
+        $this->assertStringNotContainsString('"Host":[""]', $out);
+        $this->assertStringNotContainsString('"Host":""', $out);
+    }
+
+    public function testSingboxTuicOmitsPasswordField()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'tuic', 'name' => 'TUIC-1', 'host' => 'tuic.example.com', 'port' => 8443, 'disable_sni' => 0, 'zero_rtt_handshake' => 0, 'udp_relay_mode' => 'native', 'congestion_control' => 'cubic', 'insecure' => 0, 'server_name' => 'tuic.example.com', 'tls_settings' => ['server_name' => 'tuic.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'tuic-pass'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"uuid":"tuic-pass"', $out);
+        $this->assertStringNotContainsString('"password":"tuic-pass"', $out);
+    }
+
+    public function testSingboxVmessHttpTransportHostIsArray()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vmess', 'name' => 'VM-HTTP', 'host' => 'vm.example.com', 'port' => 80, 'network' => 'tcp', 'tls' => 0, 'network_settings' => ['header' => ['type' => 'http', 'request' => ['headers' => ['Host' => 'vm.example.com'], 'path' => ['/']]]], 'sub_uuid' => 'vm-pass'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"type":"http"', $out);
+        $this->assertStringContainsString('"host":["vm.example.com"]', $out);
+        $this->assertStringNotContainsString('"host":"vm.example.com"', $out);
+    }
+
+    public function testSingboxHysteriaV1WithoutBandwidthOmitsUpDownMbps()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria', 'name' => 'HY-1', 'host' => 'hy.example.com', 'port' => '443', 'version' => 1, 'insecure' => 0, 'server_name' => 'hy.example.com', 'up_mbps' => '', 'down_mbps' => '', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy-pass'],
+        ];
+        $out = (new Singbox($user, $servers))->handle()->getContent();
+
+        $this->assertStringContainsString('"type":"hysteria"', $out);
+        $this->assertStringNotContainsString('"up_mbps"', $out);
+        $this->assertStringNotContainsString('"down_mbps"', $out);
     }
 
     public function testLoonIncludesHysteria2Type()

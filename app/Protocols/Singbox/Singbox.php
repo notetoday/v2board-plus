@@ -179,7 +179,10 @@ class Singbox
         if ($server['network'] === 'tcp') {
             $tcpSettings = $server['networkSettings'] ?? ($server['network_settings'] ?? []);
             if (isset($tcpSettings['header']['type']) && $tcpSettings['header']['type'] == 'http') $array['transport']['type'] = $tcpSettings['header']['type'];
-            if (isset($tcpSettings['header']['request']['headers']['Host'])) $array['transport']['host'] = $tcpSettings['header']['request']['headers']['Host'];
+            if (isset($tcpSettings['header']['request']['headers']['Host'])) {
+                $httpHost = $tcpSettings['header']['request']['headers']['Host'];
+                $array['transport']['host'] = is_array($httpHost) ? $httpHost : [$httpHost];
+            }
             if (isset($tcpSettings['header']['request']['path'][0])) $array['transport']['path'] = $tcpSettings['header']['request']['path'][0];
         }
         if ($server['network'] === 'ws') {
@@ -208,19 +211,28 @@ class Singbox
             "server_port" => $server['port'],
             "uuid" => $password,
             "domain_resolver" => "local",
-            "packet_encoding" => "xudp"
         ];
 
         $tlsSettings = $server['tls_settings'] ?? [];
+        $flow = (string)($server['flow'] ?? '');
+        if ($flow === '' && ($server['tls'] ?? 0) == 2) {
+            $flow = 'xtls-rprx-vision';
+        }
 
         if ($server['tls']) {
             $tlsConfig = [];
             $tlsConfig['enabled'] = true;
-            $array['flow'] = !empty($server['flow']) ? $server['flow'] : "";
+            if ($flow !== '') {
+                $array['flow'] = $flow;
+            } else {
+                $array['packet_encoding'] = 'xudp';
+            }
             $tlsSettings = $server['tls_settings'] ?? [];
             if ($server['tls_settings']) {
                 $tlsConfig['insecure'] = ($tlsSettings['allow_insecure'] ?? 0) == 1 ? true : false;
-                $tlsConfig['server_name'] = $tlsSettings['server_name'] ?? null;
+                if (!empty($tlsSettings['server_name'])) {
+                    $tlsConfig['server_name'] = $tlsSettings['server_name'];
+                }
                 if ($server['tls'] == 2) {
                     $tlsConfig['reality'] = [
                         'enabled' => true,
@@ -253,7 +265,10 @@ class Singbox
         if ($server['network'] === 'tcp') {
             $tcpSettings = $server['network_settings'];
             if (isset($tcpSettings['header']['type']) && $tcpSettings['header']['type'] == 'http') $array['transport']['type'] = $tcpSettings['header']['type'];
-            if (isset($tcpSettings['header']['request']['headers']['Host'])) $array['transport']['host'] = $tcpSettings['header']['request']['headers']['Host'];
+            if (isset($tcpSettings['header']['request']['headers']['Host'])) {
+                $httpHost = $tcpSettings['header']['request']['headers']['Host'];
+                $array['transport']['host'] = is_array($httpHost) ? $httpHost : [$httpHost];
+            }
             if (isset($tcpSettings['header']['request']['path'][0])) $array['transport']['path'] = $tcpSettings['header']['request']['path'][0];
         }
         if ($server['network'] === 'ws') {
@@ -316,10 +331,10 @@ class Singbox
             }
             // ws配置
             if($server['network'] === "ws") {
-                if(isset($server['network_settings']['path'])) {
-                    $array['transport']['path'] = $server['network_settings']['path'] ?? '/';
+                if(isset($server['network_settings']['path']) && !empty($server['network_settings']['path'])) {
+                    $array['transport']['path'] = $server['network_settings']['path'];
                 }
-                if(isset($server['network_settings']['headers']['Host'])){
+                if(isset($server['network_settings']['headers']['Host']) && !empty($server['network_settings']['headers']['Host'])){
                     $array['transport']['headers'] = ['Host' => array($server['network_settings']['headers']['Host'])];
                 }
                 $array['transport']['max_early_data'] = 2048;
@@ -338,7 +353,6 @@ class Singbox
         $array['server'] = $server['host'];
         $array['server_port'] = $server['port'];
         $array['uuid'] = $password;
-        $array['password'] = $password;
         $array['congestion_control'] = $server['congestion_control'] ?? 'cubic';
         $array['udp_relay_mode'] = $server['udp_relay_mode'] ?? 'native';
         $array['zero_rtt_handshake'] = $server['zero_rtt_handshake'] ? true : false;
@@ -394,7 +408,10 @@ class Singbox
         if ($server['network'] === 'tcp') {
             $tcpSettings = $server['network_settings'];
             if (isset($tcpSettings['header']['type']) && $tcpSettings['header']['type'] == 'http') $array['transport']['type'] = $tcpSettings['header']['type'];
-            if (isset($tcpSettings['header']['request']['headers']['Host'])) $array['transport']['host'] = $tcpSettings['header']['request']['headers']['Host'];
+            if (isset($tcpSettings['header']['request']['headers']['Host'])) {
+                $httpHost = $tcpSettings['header']['request']['headers']['Host'];
+                $array['transport']['host'] = is_array($httpHost) ? $httpHost : [$httpHost];
+            }
             if (isset($tcpSettings['header']['request']['path'][0])) $array['transport']['path'] = $tcpSettings['header']['request']['path'][0];
         }
         if ($server['network'] === 'ws') {
@@ -455,8 +472,10 @@ class Singbox
         if (is_null($server['version']) || $server['version'] == 1) {
             $array['auth_str'] = $password;
             $array['type'] = 'hysteria';
-            $array['up_mbps'] = $user->speed_limit ? min($server['down_mbps'], $user->speed_limit) : $server['down_mbps'];
-            $array['down_mbps'] = $user->speed_limit ? min($server['up_mbps'], $user->speed_limit) : $server['up_mbps'];
+            if (!empty($server['down_mbps']) || !empty($server['up_mbps'])) {
+                $array['up_mbps'] = $user->speed_limit ? min($server['down_mbps'], $user->speed_limit) : $server['down_mbps'];
+                $array['down_mbps'] = $user->speed_limit ? min($server['up_mbps'], $user->speed_limit) : $server['up_mbps'];
+            }
             if (isset($server['obfs']) && isset($server['obfs_password'])) {
                 $array['obfs'] = $server['obfs_password'];
             }

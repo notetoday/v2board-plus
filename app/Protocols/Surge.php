@@ -240,7 +240,7 @@ class Surge
             "{$server['host']}",
             "{$firstPort}",
             "password={$password}",
-            "download-bandwidth={$server['up_mbps']}",
+            !empty($server['up_mbps']) ? "download-bandwidth={$server['up_mbps']}" : "",
             $server['server_name'] ? "sni={$server['server_name']}" : "",
             // 'tfo=true', 
             'udp-relay=true'
