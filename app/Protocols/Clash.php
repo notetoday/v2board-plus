@@ -51,7 +51,11 @@ class Clash
                     $proxies[] = $item['name'];
                     break;
                 case 'vless':
-                    $proxy[] = self::buildVless(Helper::resolveServerCredential($user['uuid'], $item), $item);
+                    $vlessCredential = Helper::resolveServerCredential($user['uuid'], $item);
+                    if (!Helper::isValidUuid((string)$vlessCredential)) {
+                        break;
+                    }
+                    $proxy[] = self::buildVless($vlessCredential, $item);
                     $proxies[] = $item['name'];
                     break;
                 case 'trojan':

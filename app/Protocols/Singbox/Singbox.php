@@ -64,7 +64,11 @@ class Singbox
                     $proxies[] = $vmessConfig;
                     break;
                 case 'vless':
-                    $vlessConfig = $this->buildVless(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
+                    $vlessCredential = Helper::resolveServerCredential($this->user['uuid'], $item);
+                    if (!Helper::isValidUuid((string)$vlessCredential)) {
+                        break;
+                    }
+                    $vlessConfig = $this->buildVless($vlessCredential, $item);
                     $proxies[] = $vlessConfig;
                     break;
                 case 'tuic':

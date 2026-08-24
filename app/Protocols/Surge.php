@@ -38,9 +38,12 @@ class Surge
                 $proxyGroup .= $item['name'] . ', ';
             }elseif ($item['type'] === 'vmess') {
                 // [Proxy]
-                $proxies .= self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item);
-                // [Proxy Group]
-                $proxyGroup .= $item['name'] . ', ';
+                $vmessCredential = Helper::resolveServerCredential($user['uuid'], $item);
+                if (Helper::isValidUuid((string)$vmessCredential)) {
+                    $proxies .= self::buildVmess($vmessCredential, $item);
+                    // [Proxy Group]
+                    $proxyGroup .= $item['name'] . ', ';
+                }
             }elseif ($item['type'] === 'trojan') {
                 // [Proxy]
                 $proxies .= self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item);

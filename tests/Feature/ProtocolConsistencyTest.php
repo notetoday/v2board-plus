@@ -48,11 +48,11 @@ class ProtocolConsistencyTest extends TestCase
     {
         return [
             ['type' => 'shadowsocks', 'name' => 'SS-1', 'host' => 'ss.example.com', 'port' => 8388, 'cipher' => 'aes-256-gcm', 'obfs' => '', 'created_at' => time(), 'network' => 'tcp', 'network_settings' => [], 'sub_uuid' => 'ss-pass'],
-            ['type' => 'vmess', 'name' => 'VM-1', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 1, 'tls_settings' => ['server_name' => 'vm.example.com', 'allow_insecure' => 0], 'network_settings' => ['path' => '/vm', 'headers' => ['Host' => 'vm.example.com']], 'sub_uuid' => 'vm-pass'],
-            ['type' => 'vless', 'name' => 'VL-1', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0, 'public_key' => '', 'short_id' => '', 'ech' => '', 'ech_config' => ''], 'network_settings' => ['path' => '/x', 'headers' => ['Host' => 'vl.example.com']], 'sub_uuid' => 'vl-pass'],
-            ['type' => 'vless', 'name' => 'VL-GRPC', 'host' => 'vlgrpc.example.com', 'port' => 443, 'network' => 'grpc', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vlgrpc.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => ['serviceName' => 'grpc-svc'], 'sub_uuid' => 'vlgrpc-pass'],
-            ['type' => 'vless', 'name' => 'VL-XHTTP', 'host' => 'vlxhttp.example.com', 'port' => 443, 'network' => 'xhttp', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vlxhttp.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => ['path' => '/xhttp', 'host' => 'xhttp.example.com', 'mode' => 'auto'], 'sub_uuid' => 'vlxhttp-pass'],
-            ['type' => 'vless', 'name' => 'VL-H2', 'host' => 'vlh2.example.com', 'port' => 443, 'network' => 'h2', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vlh2.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => ['path' => '/h2', 'headers' => ['Host' => 'h2.example.com']], 'sub_uuid' => 'vlh2-pass'],
+            ['type' => 'vmess', 'name' => 'VM-1', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 1, 'tls_settings' => ['server_name' => 'vm.example.com', 'allow_insecure' => 0], 'network_settings' => ['path' => '/vm', 'headers' => ['Host' => 'vm.example.com']], 'sub_uuid' => '33333333-3333-4333-8333-333333333333'],
+            ['type' => 'vless', 'name' => 'VL-1', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0, 'public_key' => '', 'short_id' => '', 'ech' => '', 'ech_config' => ''], 'network_settings' => ['path' => '/x', 'headers' => ['Host' => 'vl.example.com']], 'sub_uuid' => '11111111-1111-4111-8111-111111111111'],
+            ['type' => 'vless', 'name' => 'VL-GRPC', 'host' => 'vlgrpc.example.com', 'port' => 443, 'network' => 'grpc', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vlgrpc.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => ['serviceName' => 'grpc-svc'], 'sub_uuid' => '22222222-2222-4222-8222-222222222222'],
+            ['type' => 'vless', 'name' => 'VL-XHTTP', 'host' => 'vlxhttp.example.com', 'port' => 443, 'network' => 'xhttp', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vlxhttp.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => ['path' => '/xhttp', 'host' => 'xhttp.example.com', 'mode' => 'auto'], 'sub_uuid' => '33333333-3333-4333-8333-333333333333'],
+            ['type' => 'vless', 'name' => 'VL-H2', 'host' => 'vlh2.example.com', 'port' => 443, 'network' => 'h2', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vlh2.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => ['path' => '/h2', 'headers' => ['Host' => 'h2.example.com']], 'sub_uuid' => '44444444-4444-4444-8444-444444444444'],
             ['type' => 'trojan', 'name' => 'TJ-1', 'host' => 'tj.example.com', 'port' => 443, 'network' => 'tcp', 'server_name' => 'tj.example.com', 'allow_insecure' => 0, 'tls_settings' => ['server_name' => 'tj.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'tj-pass'],
             ['type' => 'tuic', 'name' => 'TUIC-1', 'host' => 'tuic.example.com', 'port' => 8443, 'disable_sni' => 0, 'zero_rtt_handshake' => 0, 'udp_relay_mode' => 'native', 'congestion_control' => 'cubic', 'insecure' => 0, 'server_name' => 'tuic.example.com', 'tls_settings' => ['server_name' => 'tuic.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'tuic-pass'],
             ['type' => 'hysteria', 'name' => 'HY-1', 'host' => 'hy.example.com', 'port' => '443', 'version' => 1, 'insecure' => 0, 'server_name' => 'hy.example.com', 'up_mbps' => '50', 'down_mbps' => '100', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy-pass'],
@@ -206,7 +206,7 @@ class ProtocolConsistencyTest extends TestCase
     {
         $user = $this->makeUser();
         $servers = [
-            ['type' => 'vless', 'name' => '俄罗斯_02', 'host' => '176.124.222.105', 'port' => 6443, 'network' => 'tcp', 'tls' => 2, 'flow' => '', 'tls_settings' => ['server_name' => 'api.vkimages.io', 'fingerprint' => 'qq', 'allow_insecure' => 0, 'public_key' => 'sgFF', 'short_id' => '844352756c1fabba', 'ech' => '', 'ech_config' => ''], 'network_settings' => [], 'sub_uuid' => '440f3c08'],
+            ['type' => 'vless', 'name' => '俄罗斯_02', 'host' => '176.124.222.105', 'port' => 6443, 'network' => 'tcp', 'tls' => 2, 'flow' => '', 'tls_settings' => ['server_name' => 'api.vkimages.io', 'fingerprint' => 'qq', 'allow_insecure' => 0, 'public_key' => 'sgFF', 'short_id' => '844352756c1fabba', 'ech' => '', 'ech_config' => ''], 'network_settings' => [], 'sub_uuid' => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'],
         ];
         $out = (new Singbox($user, $servers))->handle()->getContent();
 
@@ -219,7 +219,7 @@ class ProtocolConsistencyTest extends TestCase
     {
         $user = $this->makeUser();
         $servers = [
-            ['type' => 'vless', 'name' => 'VL-1', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0, 'public_key' => '', 'short_id' => '', 'ech' => '', 'ech_config' => ''], 'network_settings' => ['path' => '/x', 'headers' => ['Host' => 'vl.example.com']], 'sub_uuid' => 'vl-pass'],
+            ['type' => 'vless', 'name' => 'VL-1', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0, 'public_key' => '', 'short_id' => '', 'ech' => '', 'ech_config' => ''], 'network_settings' => ['path' => '/x', 'headers' => ['Host' => 'vl.example.com']], 'sub_uuid' => '11111111-1111-4111-8111-111111111111'],
         ];
         $out = (new Singbox($user, $servers))->handle()->getContent();
 
@@ -415,11 +415,35 @@ class ProtocolConsistencyTest extends TestCase
     {
         $user = $this->makeUser();
         $servers = [
-            ['type' => 'vless', 'name' => 'VL-ENC', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 1, 'flow' => '', 'encryption' => 'mlkem768x25519plus', 'encryption_settings' => ['mode' => '', 'rtt' => '', 'password' => 'secret'], 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => [], 'sub_uuid' => 'vl-pass'],
+            ['type' => 'vless', 'name' => 'VL-ENC', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 1, 'flow' => '', 'encryption' => 'mlkem768x25519plus', 'encryption_settings' => ['mode' => '', 'rtt' => '', 'password' => 'secret'], 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => [], 'sub_uuid' => '55555555-5555-4555-8555-555555555555'],
         ];
         $out = (new Clash($user, $servers))->handle();
 
         $this->assertStringContainsString('encryption: mlkem768x25519plus.native.1rtt.secret', $out);
+    }
+
+    public function testClashSkipsVlessWithNonUuidCredential()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vless', 'name' => 'VL-BAD', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => [], 'sub_uuid' => 'XpnTeam-33'],
+            ['type' => 'vless', 'name' => 'VL-GOOD', 'host' => 'vl2.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vl2.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => [], 'sub_uuid' => '66666666-6666-4666-8666-666666666666'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringNotContainsString('VL-BAD', $out);
+        $this->assertStringContainsString('VL-GOOD', $out);
+    }
+
+    public function testShadowrocketKeepsVlessWithNonUuidCredential()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vless', 'name' => 'VL-BAD', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 1, 'flow' => '', 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => [], 'sub_uuid' => 'XpnTeam-33'],
+        ];
+        $out = base64_decode((new Shadowrocket($user, $servers))->handle());
+
+        $this->assertStringContainsString('vless://XpnTeam-33@', $out);
     }
 
     public function testSurgeShadowsocksUsesUdpRelayAndTfo()
@@ -533,7 +557,7 @@ class ProtocolConsistencyTest extends TestCase
     public function testSurgeVmessWsSecurityMapsEncryptMethod()
     {
         $user = $this->makeUser();
-        $base = ['type' => 'vmess', 'name' => 'VM-WS', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 0, 'sub_uuid' => 'vm-pass'];
+        $base = ['type' => 'vmess', 'name' => 'VM-WS', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 0, 'sub_uuid' => '22222222-2222-4222-8222-222222222222'];
 
         $servers = [$base + ['network_settings' => ['path' => '/ws', 'security' => 'chacha20-poly1305']]];
         $out = (new Surge($user, $servers))->handle();
@@ -545,10 +569,36 @@ class ProtocolConsistencyTest extends TestCase
         $this->assertStringNotContainsString('encrypt-method=', $out);
     }
 
+    public function testSurgeSkipsVmessWithNonUuidCredential()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vmess', 'name' => 'VM-BAD', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 0, 'network_settings' => [], 'sub_uuid' => 'XpnTeam-33'],
+            ['type' => 'vmess', 'name' => 'VM-GOOD', 'host' => 'vm2.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 0, 'network_settings' => [], 'sub_uuid' => '77777777-7777-4777-8777-777777777777'],
+        ];
+        $out = (new Surge($user, $servers))->handle();
+
+        $this->assertStringNotContainsString('VM-BAD', $out);
+        $this->assertStringContainsString('VM-GOOD', $out);
+    }
+
+    public function testSurfboardSkipsVmessWithNonUuidCredential()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vmess', 'name' => 'VM-BAD', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 0, 'network_settings' => [], 'sub_uuid' => 'XpnTeam-33'],
+            ['type' => 'vmess', 'name' => 'VM-GOOD', 'host' => 'vm2.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 0, 'network_settings' => [], 'sub_uuid' => '77777777-7777-4777-8777-777777777777'],
+        ];
+        $out = (new Surfboard($user, $servers))->handle();
+
+        $this->assertStringNotContainsString('VM-BAD', $out);
+        $this->assertStringContainsString('VM-GOOD', $out);
+    }
+
     public function testSurfboardVmessWsSecurityMapsEncryptMethod()
     {
         $user = $this->makeUser();
-        $base = ['type' => 'vmess', 'name' => 'VM-WS', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 0, 'sub_uuid' => 'vm-pass'];
+        $base = ['type' => 'vmess', 'name' => 'VM-WS', 'host' => 'vm.example.com', 'port' => 443, 'network' => 'ws', 'tls' => 0, 'sub_uuid' => '22222222-2222-4222-8222-222222222222'];
 
         $servers = [$base + ['network_settings' => ['path' => '/ws', 'security' => 'chacha20-poly1305']]];
         $out = (new Surfboard($user, $servers))->handle();

@@ -11,6 +11,19 @@ class Helper
         return base64_encode(substr($uuid, 0, $length));
     }
 
+    /**
+     * mihomo (Clash family) strictly validates VLESS/VMess `uuid` as a UUID and
+     * rejects arbitrary strings. Clients like Shadowrocket and V2Ray accept any
+     * id, so this check is only applied where the target requires a real UUID.
+     */
+    public static function isValidUuid(string $value): bool
+    {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+            return true;
+        }
+        return (bool) preg_match('/^[0-9a-f]{32}$/i', $value);
+    }
+
     public static function getServerKey($timestamp, $length)
     {
         return base64_encode(substr(md5($timestamp), 0, $length));

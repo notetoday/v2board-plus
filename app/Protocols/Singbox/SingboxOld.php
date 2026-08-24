@@ -63,8 +63,11 @@ class SingboxOld
                 $proxies[] = $vmessConfig;
             }
             if ($item['type'] === 'vless') {
-                $vlessConfig = $this->buildVless(Helper::resolveServerCredential($this->user['uuid'], $item), $item);
-                $proxies[] = $vlessConfig;
+                $vlessCredential = Helper::resolveServerCredential($this->user['uuid'], $item);
+                if (Helper::isValidUuid((string)$vlessCredential)) {
+                    $vlessConfig = $this->buildVless($vlessCredential, $item);
+                    $proxies[] = $vlessConfig;
+                }
             }
             if ($item['type'] === 'tuic') {
                 $tuicConfig = $this->buildTuic(Helper::resolveServerCredential($this->user['uuid'], $item), $item);

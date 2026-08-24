@@ -49,8 +49,11 @@ class Stash
                 array_push($proxies, $item['name']);
             }
             if ($item['type'] === 'vless') {
-                array_push($proxy, self::buildVless(Helper::resolveServerCredential($user['uuid'], $item), $item));
-                array_push($proxies, $item['name']);
+                $vlessCredential = Helper::resolveServerCredential($user['uuid'], $item);
+                if (Helper::isValidUuid((string)$vlessCredential)) {
+                    array_push($proxy, self::buildVless($vlessCredential, $item));
+                    array_push($proxies, $item['name']);
+                }
             }
             if ($item['type'] === 'trojan') {
                 array_push($proxy, self::buildTrojan(Helper::resolveServerCredential($user['uuid'], $item), $item));

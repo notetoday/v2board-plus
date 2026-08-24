@@ -64,9 +64,12 @@ class Surfboard
             }
             if ($item['type'] === 'vmess') {
                 // [Proxy]
-                $proxies .= self::buildVmess(Helper::resolveServerCredential($user['uuid'], $item), $item);
-                // [Proxy Group]
-                $proxyGroup .= $item['name'] . ', ';
+                $vmessCredential = Helper::resolveServerCredential($user['uuid'], $item);
+                if (Helper::isValidUuid((string)$vmessCredential)) {
+                    $proxies .= self::buildVmess($vmessCredential, $item);
+                    // [Proxy Group]
+                    $proxyGroup .= $item['name'] . ', ';
+                }
             }
             if ($item['type'] === 'trojan') {
                 // [Proxy]
