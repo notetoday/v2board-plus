@@ -306,10 +306,10 @@ class Clash
             $array['network'] = 'xhttp';
             if ($server['network_settings']) {
                 $xhttpSettings = $server['network_settings'];
-                $array['xhttp-opts'] = [];
-                if (isset($xhttpSettings['path'])) $array['xhttp-opts']['path'] = $xhttpSettings['path'];
-                if (isset($xhttpSettings['host'])) $array['xhttp-opts']['host'] = $xhttpSettings['host'];
-                if (isset($xhttpSettings['mode'])) $array['xhttp-opts']['mode'] = $xhttpSettings['mode'];
+                    $array['xhttp-opts'] = [];
+                    if (isset($xhttpSettings['path']) && !empty($xhttpSettings['path'])) $array['xhttp-opts']['path'] = $xhttpSettings['path'];
+                    if (isset($xhttpSettings['host']) && !empty($xhttpSettings['host'])) $array['xhttp-opts']['host'] = $xhttpSettings['host'];
+                    if (isset($xhttpSettings['mode']) && !empty($xhttpSettings['mode'])) $array['xhttp-opts']['mode'] = $xhttpSettings['mode'];
                 // 暂不支持extra
                 //if (isset($xhttpSettings['extra'])) {
                     //$array['xhttp-opts']['headers'] = $xhttpSettings['extra']['headers'] ?? [];
@@ -324,12 +324,12 @@ class Clash
         if (isset($server['encryption']) && !empty($server['encryption']) && isset($server['encryption_settings']) && !empty($server['encryption_settings'])) {
             $encryptionSettings = $server['encryption_settings'];
             $array['encryption'] = $server['encryption'] ?? 'mlkem768x25519plus';
-            $array['encryption'] .= '.' . $encryptionSettings['mode'] ?? 'native';
-            $array['encryption'] .= '.' . $encryptionSettings['rtt'] ?? '1rtt';
+            $array['encryption'] .= '.' . (!empty($encryptionSettings['mode']) ? $encryptionSettings['mode'] : 'native');
+            $array['encryption'] .= '.' . (!empty($encryptionSettings['rtt']) ? $encryptionSettings['rtt'] : '1rtt');
             if (isset($encryptionSettings['client_padding']) && !empty($encryptionSettings['client_padding'])) {
                 $array['encryption'] .= '.' . $encryptionSettings['client_padding'];
             }
-            $array['encryption'] .= '.' . $encryptionSettings['password'] ?? '';
+            $array['encryption'] .= '.' . ($encryptionSettings['password'] ?? '');
         }
 
         return $array;
@@ -352,10 +352,10 @@ class Clash
             }
             // ws配置
             if($server['network'] === "ws") {
-                if(isset($server['network_settings']['path'])) {
+                if(isset($server['network_settings']['path']) && !empty($server['network_settings']['path'])) {
                     $array['ws-opts']['path'] = $server['network_settings']['path'];
                 }
-                if(isset($server['network_settings']['headers']['Host'])){
+                if(isset($server['network_settings']['headers']['Host']) && !empty($server['network_settings']['headers']['Host'])){
                     $array['ws-opts']['headers']['Host'] = $server['network_settings']['headers']['Host'];
                 }
             }
@@ -386,8 +386,7 @@ class Clash
             'type' => 'tuic',
             'server' => $server['host'],
             'port' => $server['port'],
-            'uuid' => $password,
-            'password' => $password,
+            'token' => $password,
             'alpn' => ['h3'],
             'disable-sni' => $server['disable_sni'] ? true : false,
             'reduce-rtt' => $server['zero_rtt_handshake'] ? true : false,
@@ -439,7 +438,6 @@ class Clash
         $array['port'] = (int)$firstPort;
         if (count($parts) !== 1 || strpos($parts[0], '-') !== false) {
             $array['ports'] = $server['port'];
-            $array['mport'] = $server['port'];
         }
         $array['udp'] = true;
         $array['skip-cert-verify'] = $server['insecure'] == 1 ? true : false;
@@ -455,13 +453,14 @@ class Clash
             }
         } else {
             $array['type'] = 'hysteria';
-            $array['auth_str'] = $password;
+            $array['auth-str'] = $password;
             if (isset($server['obfs']) && isset($server['obfs_password'])){
                 $array['obfs'] = $server['obfs_password'];
             }
-            //Todo:完善客户端上下行
-            $array['up'] = $server['down_mbps'];
-            $array['down'] = $server['up_mbps'];
+            if (!empty($server['down_mbps']) || !empty($server['up_mbps'])) {
+                $array['up'] = $server['down_mbps'];
+                $array['down'] = $server['up_mbps'];
+            }
             $array['protocol'] = 'udp';
         }
 
@@ -491,7 +490,6 @@ class Clash
         $array['port'] = (int)$firstPort;
         if (count($parts) !== 1 || strpos($parts[0], '-') !== false) {
             $array['ports'] = $server['port'];
-            $array['mport'] = $server['port'];
         }
         if (!empty($server['obfs']) && !empty($server['obfs_password'])){
             $array['obfs'] = $server['obfs'];

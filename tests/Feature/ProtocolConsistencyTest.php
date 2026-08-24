@@ -311,4 +311,64 @@ class ProtocolConsistencyTest extends TestCase
         $this->assertStringContainsString('obfs: salamander', $out);
         $this->assertStringContainsString("obfs-password: obfs-secret", $out);
     }
+
+    public function testClashTuicUsesTokenField()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'tuic', 'name' => 'TUIC-1', 'host' => 'tuic.example.com', 'port' => 8443, 'disable_sni' => 0, 'zero_rtt_handshake' => 0, 'udp_relay_mode' => 'native', 'congestion_control' => 'cubic', 'insecure' => 0, 'server_name' => 'tuic.example.com', 'tls_settings' => ['server_name' => 'tuic.example.com', 'allow_insecure' => 0], 'sub_uuid' => 'tuic-pass'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringContainsString('token: tuic-pass', $out);
+        $this->assertStringNotContainsString('uuid:', $out);
+        $this->assertStringNotContainsString('password:', $out);
+    }
+
+    public function testClashHysteriaUsesAuthStrHyphen()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria', 'name' => 'HY-1', 'host' => 'hy.example.com', 'port' => '443', 'version' => 1, 'insecure' => 0, 'server_name' => 'hy.example.com', 'up_mbps' => '50', 'down_mbps' => '100', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy-pass'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringContainsString('auth-str: hy-pass', $out);
+        $this->assertStringNotContainsString('auth_str:', $out);
+    }
+
+    public function testClashHysteriaWithoutBandwidthOmitsUpDown()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria', 'name' => 'HY-EMPTY', 'host' => 'hy.example.com', 'port' => '443', 'version' => 1, 'insecure' => 0, 'server_name' => 'hy.example.com', 'up_mbps' => '', 'down_mbps' => '', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy-pass'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringNotContainsString('up:', $out);
+        $this->assertStringNotContainsString('down:', $out);
+    }
+
+    public function testClashHysteria2OmitsMport()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'hysteria2', 'name' => 'HY2-PORTS', 'host' => 'hy2.example.com', 'port' => '443-8443', 'tls_settings' => ['server_name' => 'hy2.example.com', 'allow_insecure' => 0], 'insecure' => 0, 'server_name' => 'hy2.example.com', 'obfs' => '', 'obfs_password' => '', 'sub_uuid' => 'hy2-pass'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringContainsString('ports:', $out);
+        $this->assertStringNotContainsString('mport:', $out);
+    }
+
+    public function testClashVlessEncryptionDefaultsModeAndRtt()
+    {
+        $user = $this->makeUser();
+        $servers = [
+            ['type' => 'vless', 'name' => 'VL-ENC', 'host' => 'vl.example.com', 'port' => 443, 'network' => 'tcp', 'tls' => 1, 'flow' => '', 'encryption' => 'mlkem768x25519plus', 'encryption_settings' => ['mode' => '', 'rtt' => '', 'password' => 'secret'], 'tls_settings' => ['server_name' => 'vl.example.com', 'fingerprint' => 'chrome', 'allow_insecure' => 0], 'network_settings' => [], 'sub_uuid' => 'vl-pass'],
+        ];
+        $out = (new Clash($user, $servers))->handle();
+
+        $this->assertStringContainsString('encryption: mlkem768x25519plus.native.1rtt.secret', $out);
+    }
 }
