@@ -37,14 +37,17 @@ class ClientController extends Controller
                     }
                 }
                 if (strpos($flag, 'sing') !== false) {
-                    $version = null;
-                    if (preg_match('/sing-box\s+([0-9.]+)/i', $flag, $matches)) {
-                        $version = $matches[1];
+                    $version = $this->parseSingBoxVersion($flag);
+                    if (is_null($version)) {
+                        $version = $this->parseSingBoxVersion((string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
                     }
-                    if (!is_null($version) && $version >= '1.12.0') {
-                        $class = new Singbox($user, $servers);
-                    } else {
+                    // sing-box 1.12.0 refactored DNS servers; sing-box 1.14.0 removed the
+                    // legacy `address` format. Default to the modern config and only fall
+                    // back to the legacy template for clients declaring a version < 1.12.0.
+                    if (!is_null($version) && version_compare($version, '1.12.0', '<')) {
                         $class = new SingboxOld($user, $servers);
+                    } else {
+                        $class = new Singbox($user, $servers);
                     }
                     return $class->handle();
                 }
@@ -52,6 +55,14 @@ class ClientController extends Controller
             $class = new General($user, $servers);
             return $class->handle();
         }
+    }
+
+    private function parseSingBoxVersion(string $subject)
+    {
+        if (preg_match('/sing-box[\s\/]+([0-9]+(?:\.[0-9]+){0,2})/i', $subject, $matches)) {
+            return $matches[1];
+        }
+        return null;
     }
 
     private function setSubscribeInfoToServers(&$servers, $user)
