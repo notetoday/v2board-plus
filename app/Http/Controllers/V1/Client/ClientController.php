@@ -44,10 +44,12 @@ class ClientController extends Controller
                     // sing-box 1.12.0 refactored DNS servers; sing-box 1.14.0 removed the
                     // legacy `address` format. Default to the modern config and only fall
                     // back to the legacy template for clients declaring a version < 1.12.0.
+                    // Clients >= 1.14.0 get a template free of the deprecated remote
+                    // rule-set `download_detour` option (replaced by http_clients).
                     if (!is_null($version) && version_compare($version, '1.12.0', '<')) {
                         $class = new SingboxOld($user, $servers);
                     } else {
-                        $class = new Singbox($user, $servers);
+                        $class = new Singbox($user, $servers, is_null($version) ? [] : ['version' => $version]);
                     }
                     return $class->handle();
                 }

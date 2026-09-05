@@ -9,11 +9,13 @@ class Singbox
     private $servers;
     private $user;
     private $config;
+    private $version;
 
     public function __construct($user, $servers, array $options = null)
     {
         $this->user = $user;
         $this->servers = $servers;
+        $this->version = $options['version'] ?? null;
     }
 
     public function handle()
@@ -35,7 +37,14 @@ class Singbox
 
     protected function loadConfig()
     {
-        $defaultConfig = base_path('resources/rules/default.sing-box.json');
+        // sing-box 1.14.0 deprecated remote rule-set `download_detour` (removed in
+        // 1.16.0). Use the http_clients/default_http_client based template for
+        // clients declaring 1.14.0+, keep download_detour for 1.12.0 - 1.13.x.
+        $file = 'default.sing-box.json';
+        if (!is_null($this->version) && version_compare($this->version, '1.14.0', '>=')) {
+            $file = 'default.sing-box.114.json';
+        }
+        $defaultConfig = base_path('resources/rules/' . $file);
         $customConfig = base_path('resources/rules/custom.sing-box.json');
         $jsonData = file_exists($customConfig) ? file_get_contents($customConfig) : file_get_contents($defaultConfig);
 
