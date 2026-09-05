@@ -120,7 +120,7 @@ class Singbox
         $array['server_port'] = $server['port'];
         $array['method'] = $server['cipher'];
         $array['password'] = $password;
-        $array['domain_resolver'] = 'local';
+        $array['domain_resolver'] = ['server' => 'local', 'strategy' => 'prefer_ipv4'];
         if (isset($server['obfs']) && in_array($server['obfs'], ['http', 'tls'])) {
             $array['plugin'] = 'obfs-local';
             $plugin_opts_parts = [];
@@ -157,7 +157,7 @@ class Singbox
         $array['security'] = 'auto';
         $array['alter_id'] = 0;
         $array['transport']= [];
-        $array['domain_resolver'] = 'local';
+        $array['domain_resolver'] = ['server' => 'local', 'strategy' => 'prefer_ipv4'];
 
         if ($server['tls']) {
             $tlsConfig = [];
@@ -220,7 +220,7 @@ class Singbox
             "server" => $server['host'],
             "server_port" => $server['port'],
             "uuid" => $password,
-            "domain_resolver" => "local",
+            "domain_resolver" => ["server" => "local", "strategy" => "prefer_ipv4"],
         ];
 
         $tlsSettings = $server['tls_settings'] ?? [];
@@ -318,7 +318,7 @@ class Singbox
         $array['server'] = $server['host'];
         $array['server_port'] = $server['port'];
         $array['password'] = $password;
-        $array['domain_resolver'] = 'local';
+        $array['domain_resolver'] = ['server' => 'local', 'strategy' => 'prefer_ipv4'];
 
         $tlsSettings = $server['tls_settings'] ?? [];
         $tlsConfig = [
@@ -375,7 +375,7 @@ class Singbox
         $array['congestion_control'] = $server['congestion_control'] ?? 'cubic';
         $array['udp_relay_mode'] = $server['udp_relay_mode'] ?? 'native';
         $array['zero_rtt_handshake'] = $server['zero_rtt_handshake'] ? true : false;
-        $array['domain_resolver'] = 'local';
+        $array['domain_resolver'] = ['server' => 'local', 'strategy' => 'prefer_ipv4'];
 
         $tlsSettings = $server['tls_settings'] ?? [];
         $array['tls'] = [
@@ -397,7 +397,7 @@ class Singbox
         $array['server'] = $server['host'];
         $array['server_port'] = $server['port'];
         $array['password'] = $password;
-        $array['domain_resolver'] = 'local';
+        $array['domain_resolver'] = ['server' => 'local', 'strategy' => 'prefer_ipv4'];
 
         $tlsSettings = $server['tls_settings'] ?? [];
         $tlsConfig = [
@@ -467,7 +467,7 @@ class Singbox
         $array = [
             'tag' => $server['name'],
             'server' => $server['host'],
-            'domain_resolver' => 'local',
+            'domain_resolver' => ['server' => 'local', 'strategy' => 'prefer_ipv4'],
             'tls' => [
                 'enabled' => true,
                 'insecure' => $server['insecure'] ? true : false,
@@ -532,7 +532,7 @@ class Singbox
                 'insecure' => ($tlsSettings['allow_insecure'] ?? 0) == 1 ? true : false,
                 'server_name' => $tlsSettings['server_name'] ?? ''
             ],
-            'domain_resolver' => 'local',
+            'domain_resolver' => ['server' => 'local', 'strategy' => 'prefer_ipv4'],
             'password' => $password,
             'tag' => $server['name'],
             'type' => 'hysteria2'

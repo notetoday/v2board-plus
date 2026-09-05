@@ -61,7 +61,8 @@
             "tag": "DIRECT",
             "type": "direct",
             "domain_resolver": {
-                "server": "local"
+                "server": "local",
+                "strategy": "prefer_ipv4"
             }
         },
         {
@@ -126,7 +127,8 @@
         "auto_detect_interface": true,
         "final": "节点选择",
         "default_domain_resolver": {
-            "server": "remote"
+            "server": "remote",
+            "strategy": "prefer_ipv4"
         },
         "rule_set": [
             {
