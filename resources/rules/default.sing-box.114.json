@@ -6,9 +6,14 @@
                 "tag": "local"
             },
             {
-                "type": "udp",
+                "type": "https",
                 "tag": "remote",
                 "server": "1.1.1.1",
+                "server_port": 443,
+                "path": "/dns-query",
+                "tls": {
+                    "server_name": "cloudflare-dns.com"
+                },
                 "detour": "节点选择"
             },
             {
