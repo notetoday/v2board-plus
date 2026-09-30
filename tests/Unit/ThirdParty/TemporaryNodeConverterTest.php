@@ -114,4 +114,31 @@ class TemporaryNodeConverterTest extends TestCase
         $this->assertSame('/assignment', $array['network_settings']['path']);
         $this->assertSame('www.ignitelimit.com', $array['network_settings']['headers']['Host']);
     }
+
+    public function testControlCharactersAreStrippedFromNodeStrings()
+    {
+        // Double-encoded flag emoji "🇨🇳" becomes "ð\u009f\u0087¨ð\u009f\u0087³",
+        // which contains C1 control code points that break Clash's YAML parser.
+        $doubleEncoded = "https://t.me/wangcai2\xc3\xb0\xc2\x9f\xc2\x87\xc2\xa8\xc3\xb0\xc2\x9f\xc2\x87\xc2\xb3";
+        $node = new TemporaryNode('hysteria2', "HK\x07\x1f 02", '1.2.3.4', 443, [
+            'credential' => 'pw',
+            'sni' => $doubleEncoded,
+        ]);
+
+        $this->assertSame('HK 02', $node->name);
+        $this->assertSame("https://t.me/wangcai2\u{1F1E8}\u{1F1F3}", $node->settings['sni']);
+        $this->assertSame(0, preg_match('/[\x{0000}-\x{0008}\x{000B}\x{000C}\x{000E}-\x{001F}\x{007F}-\x{009F}]/u', $node->settings['sni']));
+
+        $array = (new TemporaryNodeConverter())->convert($node, 7);
+        $this->assertSame('HK 02', $array['name']);
+        $this->assertSame("https://t.me/wangcai2\u{1F1E8}\u{1F1F3}", $array['tls_settings']['server_name']);
+    }
+
+    public function testSanitizeStringKeepsValidUtf8AndEmoji()
+    {
+        // A correctly encoded flag emoji must survive untouched.
+        $this->assertSame("CN \u{1F1E8}\u{1F1F3}", TemporaryNode::sanitizeString("CN \u{1F1E8}\u{1F1F3}"));
+        $this->assertSame('中国 香港', TemporaryNode::sanitizeString('中国 香港'));
+        $this->assertSame("tab\tkept", TemporaryNode::sanitizeString("tab\tkept"));
+    }
 }

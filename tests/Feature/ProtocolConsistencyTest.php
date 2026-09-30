@@ -75,6 +75,27 @@ class ProtocolConsistencyTest extends TestCase
         }
     }
 
+    public function testClashOutputHasNoControlCharacters()
+    {
+        $user = $this->makeUser();
+
+        // Simulate the exact real-world breakage: a third-party hysteria2 node
+        // whose sni contains a double-encoded flag emoji (C1 control chars).
+        // Clash's Go YAML parser aborts with
+        // "yaml: control characters are not allowed".
+        $node = new \App\Services\ThirdParty\TemporaryNode('hysteria2', "HK\x1f 02", '1.2.3.4', 443, [
+            'credential' => 'pw',
+            'sni' => "https://t.me/wangcai2\xc3\xb0\xc2\x9f\xc2\x87\xc2\xa8\xc3\xb0\xc2\x9f\xc2\x87\xc2\xb3",
+        ]);
+        $server = (new \App\Services\ThirdParty\TemporaryNodeConverter())->convert($node, 1);
+
+        $out = (new Clash($user, [$server]))->handle();
+
+        $this->assertSame(0, preg_match('/[\x{0000}-\x{0008}\x{000B}\x{000C}\x{000E}-\x{001F}\x{007F}-\x{009F}]/u', $out));
+        $parsed = \Symfony\Component\Yaml\Yaml::parse($out);
+        $this->assertIsArray($parsed);
+    }
+
     public function testShadowrocketIncludesAllProtocolTypes()
     {
         $user = $this->makeUser();
